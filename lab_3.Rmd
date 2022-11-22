@@ -70,7 +70,21 @@ df <- data %>%
          primary_seatbelt_law = sbprim, secondary_seatbelt_law = sbsecon,
          miles_driven_per_capita = vehicmilespc)
 
+# Adding states to the dataframe
+state_df <- data.frame("index" = 1:51,
+                       "state_name" = sort(c(state.name, "District of Columbia")))
+df <- merge(df, state_df, by.x = 'state', by.y ='index')
+
 df
+```
+
+```{r}
+unique(data$state)
+
+state_df <- data.frame("index"=1:51,"state"=sort(c(state.name, "District of Columbia")))
+state_df
+merge(df, state_df, by.x = 'state', by.y ='index')
+
 ```
 
 # (15 points) Preliminary Model
