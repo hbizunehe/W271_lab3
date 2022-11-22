@@ -78,15 +78,6 @@ df <- merge(df, state_df, by.x = 'state', by.y ='index')
 df
 ```
 
-```{r}
-unique(data$state)
-
-state_df <- data.frame("index"=1:51,"state"=sort(c(state.name, "District of Columbia")))
-state_df
-merge(df, state_df, by.x = 'state', by.y ='index')
-
-```
-
 # (15 points) Preliminary Model
 
 Estimate a linear regression model of *totfatrte* on a set of dummy variables for the years 1981 through 2004 and interpret what you observe. In this section, you should address the following tasks: 
