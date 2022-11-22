@@ -44,6 +44,35 @@ desc
 
 As with every EDA this semester, the goal of this EDA is not to document your own process of discovery -- save that for an exploration notebook -- but instead it is to bring a reader that is new to the data to a full understanding of the important features of your data as quickly as possible. In order to do this, your EDA should include a detailed, orderly narrative description of what you want your reader to know. Do not include any output -- tables, plots, or statistics -- that you do not intend to write about.
 
+```{r data cleaning}
+# For the fractions, we are taking the majority as a speed limit
+# We skipped year_of_observation since there a year column which aligns with dx
+df <- data %>%
+  mutate(speed_limit = ifelse(sl55 >= 0.5, 55,
+                       ifelse(sl65 >= 0.5, 65,
+                       ifelse(sl70 >= 0.5, 70,
+                       ifelse(sl75 >= 0.5, 75, 0)))),
+         blood_alcohol_limit_10 = ifelse(bac10 >= 0.5, 1, 0),
+         blood_alcohol_limit_08 = ifelse(bac08 >= 0.5, 1, 0)) %>%
+  select(!c((sl55:slnone), (d80:d04), bac10, bac08)) %>% # Excluding
+  rename(minimum_drinking_age = minage, zero_tolerance_law = zerotol,
+         graduated_drivers_license_law = gdl, per_se_law = perse,
+         total_fatalities = totfat, nighttime_fatalities = nghtfat,
+         weekend_fatalities = wkndfat, total_fatalities_per_100M_miles = totfatpvm,
+         nighttime_fatalities_per_100M_miles = nghtfatpvm,
+         weekend_fatalities_per_100M_miles = wkndfatpvm,
+         state_population =  statepop, total_fatalities_rate = totfatrte,
+         nighttime_fatalities_rate = nghtfatrte,
+         weekend_fatalities_rate = wkndfatrte,
+         vehicle_miles_traveled = vehicmiles, unemployment_rate = unem,
+         population_aged_14_to_24_rate = perc14_24,
+         speed_limit_70_plus = sl70plus, seat_belt = seatbelt,
+         primary_seatbelt_law = sbprim, secondary_seatbelt_law = sbsecon,
+         miles_driven_per_capita = vehicmilespc)
+
+df
+```
+
 # (15 points) Preliminary Model
 
 Estimate a linear regression model of *totfatrte* on a set of dummy variables for the years 1981 through 2004 and interpret what you observe. In this section, you should address the following tasks: 
