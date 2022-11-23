@@ -7,6 +7,10 @@ output:
 
 ```{r load packages, echo=FALSE, message=FALSE}
 library(tidyverse)
+library(plm)
+library(grid)
+library(gridExtra)
+library(ggrepel)
 ```
 
 
@@ -24,8 +28,8 @@ Specifically, this data set contains data for the 48 continental U.S. states fro
 load(file="./data/driving.RData")
 
 ## please comment these calls in your work 
-glimpse(data)
-desc
+#glimpse(data)
+#desc
 ```
 
 
@@ -53,7 +57,8 @@ df <- data %>%
                        ifelse(sl70 >= 0.5, 70,
                        ifelse(sl75 >= 0.5, 75, 0)))),
          blood_alcohol_limit_10 = ifelse(bac10 >= 0.5, 1, 0),
-         blood_alcohol_limit_08 = ifelse(bac08 >= 0.5, 1, 0)) %>%
+         blood_alcohol_limit_08 = ifelse(bac08 >= 0.5, 1, 0),
+         perse = ifelse(perse >= 0.5, 1, 0)) %>%
   select(!c((sl55:slnone), (d80:d04), bac10, bac08)) %>% # Excluding
   rename(minimum_drinking_age = minage, zero_tolerance_law = zerotol,
          graduated_drivers_license_law = gdl, per_se_law = perse,
@@ -75,7 +80,50 @@ state_df <- data.frame("index" = 1:51,
                        "state_name" = sort(c(state.name, "District of Columbia")))
 df <- merge(df, state_df, by.x = 'state', by.y ='index')
 
-df
+# Converting data frame to pdata.frame
+pdata <- pdata.frame(df, index=c("state", "year"))
+#head(pdata)
+```
+
+```{r overall mean EDA}
+# Average mean for total_fatalities_rate over years
+pdata %>%
+  group_by(year) %>%
+  summarise(mean = mean(total_fatalities_rate), n = n()) %>%
+  ggplot(aes(x = as.Date(year,"%Y"), y = mean)) +
+  geom_line() +
+  labs(title = "Average mean fatality rate across US",
+       subtitle = "Fatality rate is going down",
+       x = "Year",  y = "Fatality Rate") +
+  theme(legend.position = "none")
+```
+
+> 'In the past few decades, the average fatality rate has gone down in the US. During the late 80s, there was an increase in the fatality rate, which was followed by a decline in a few years.'  
+
+```{r, fatality rate by state EDA, fig.height=6, fig.width=12}
+cut_point <- c(-1, 12, 24, 36, 48)
+plots <- vector('list', 4)
+
+for (i in 2:5) {
+  plots[[i-1]] <- (pdata %>%
+    filter(as.integer(state) > cut_point[i-1] & as.integer(state) <= cut_point[i]) %>%
+    ggplot(aes(x = as.Date(year,"%Y"), y = total_fatalities_rate)) +
+    geom_line() +
+    facet_wrap(~ state_name, nrow = 3, ncol=4) +
+    labs(x = "Year",  y = "Total Fatalities Rate") +
+    theme(legend.position = "none"))
+}
+
+grid.arrange(plots[[1]], plots[[2]], plots[[3]], plots[[4]], nrow = 2, ncol = 2,
+             top = textGrob("Fatality rate by states", gp=gpar(fontsize=20)))
+```
+> 'For most states, fatality rates go down over the years, but some states like Alabama and Arkansas do not show many changes. Surprisingly, Mississippi has an increase in the fatality rate.'  
+
+```{r EDA TODO}
+# traffic laws that we are exploring are seat_belt, minimum_drinking_age,
+# zero_tolerance_law, graduated_drivers_license_law, per_se_law, speed_limit, 
+# speed_limit_70_plus, primary_seatbelt_law, secondary_seatbelt_law, 
+# blood_alcohol_limit_10, blood_alcohol_limit_08
 ```
 
 # (15 points) Preliminary Model
