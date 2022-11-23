@@ -7,6 +7,7 @@ output:
 
 ```{r load packages, echo=FALSE, message=FALSE}
 library(tidyverse)
+library(patchwork)
 ```
 
 
@@ -31,19 +32,84 @@ desc
 
 # (30 points, total) Build and Describe the Data 
 
-1. (5 points) Load the data and produce useful features. Specifically: 
-    - Produce a new variable, called `speed_limit` that re-encodes the data that is in `sl55`, `sl65`, `sl70`, `sl75`, and `slnone`; 
-    - Produce a new variable, called `year_of_observation` that re-encodes the data that is in `d80`, `d81`, ... , `d04`. 
-    - Produce a new variable for each of the other variables that are one-hot encoded (i.e. `bac*` variable series). 
-    - Rename these variables to sensible names that are legible to a reader of your analysis. For example, the dependent variable as provided is called, `totfatrte`. Pick something more sensible, like, `total_fatalities_rate`. There are few enough of these variables to change, that you should change them for all the variables in the data. (You will thank yourself later.)
-2. (5 points) Provide a description of the basic structure of the dataset. What is this data? How, where, and when is it collected? Is the data generated through a survey or some other method? Is the data that is presented a sample from the population, or is it a *census* that represents the entire population? Minimally, this should include:
-    - How is the our dependent variable of interest `total_fatalities_rate` defined? 
-3. (20 points) Conduct a very thorough EDA, which should include both graphical and tabular techniques, on the dataset, including both the dependent variable `total_fatalities_rate` and the potential explanatory variables. Minimally, this should include: 
-    - How is the our dependent variable of interest `total_fatalities_rate` defined? 
-    - What is the average of `total_fatalities_rate` in each of the years in the time period covered in this dataset? 
+```{r echo=FALSE}
+# 1. (5 points) Load the data and produce useful features. Specifically: 
+#     - Produce a new variable, called `speed_limit` that re-encodes the data that is in `sl55`, `sl65`, `sl70`, `sl75`, and `slnone`; 
+#     - Produce a new variable, called `year_of_observation` that re-encodes the data that is in `d80`, `d81`, ... , `d04`. 
+#     - Produce a new variable for each of the other variables that are one-hot encoded (i.e. `bac*` variable series). 
+#     - Rename these variables to sensible names that are legible to a reader of your analysis. For example, the dependent variable as provided is called, `totfatrte`. Pick something more sensible, like, `total_fatalities_rate`. There are few enough of these variables to change, that you should change them for all the variables in the data. (You will thank yourself later.)
+# 2. (5 points) Provide a description of the basic structure of the dataset. What is this data? How, where, and when is it collected? Is the data generated through a survey or some other method? Is the data that is presented a sample from the population, or is it a *census* that represents the entire population? Minimally, this should include:
+#     - How is the our dependent variable of interest `total_fatalities_rate` defined? 
+# 3. (20 points) Conduct a very thorough EDA, which should include both graphical and tabular techniques, on the dataset, including both the dependent variable `total_fatalities_rate` and the potential explanatory variables. Minimally, this should include: 
+#     - How is the our dependent variable of interest `total_fatalities_rate` defined? 
+#     - What is the average of `total_fatalities_rate` in each of the years in the time period covered in this dataset? 
+# 
+# As with every EDA this semester, the goal of this EDA is not to document your own process of discovery -- save that for an exploration notebook -- but instead it is to bring a reader that is new to the data to a full understanding of the important features of your data as quickly as possible. In order to do this, your EDA should include a detailed, orderly narrative description of what you want your reader to know. Do not include any output -- tables, plots, or statistics -- that you do not intend to write about.
+```
 
-As with every EDA this semester, the goal of this EDA is not to document your own process of discovery -- save that for an exploration notebook -- but instead it is to bring a reader that is new to the data to a full understanding of the important features of your data as quickly as possible. In order to do this, your EDA should include a detailed, orderly narrative description of what you want your reader to know. Do not include any output -- tables, plots, or statistics -- that you do not intend to write about.
+```{r reencode}
+# For the fractions, we are taking the majority as a speed limit
+# We skipped year_of_observation since there a year column which aligns with dx
+df <- data %>%
+  mutate(speed_limit = ifelse(sl55 >= 0.5, 55,
+                       ifelse(sl65 >= 0.5, 65,
+                       ifelse(sl70 >= 0.5, 70,
+                       ifelse(sl75 >= 0.5, 75, 0)))),
+         blood_alcohol_limit_10 = ifelse(bac10 >= 0.5, 1, 0),
+         blood_alcohol_limit_08 = ifelse(bac08 >= 0.5, 1, 0)) %>%
+  select(!c((sl55:slnone), (d80:d04), bac10, bac08)) %>% # Excluding
+  rename(minimum_drinking_age = minage, zero_tolerance_law = zerotol,
+         graduated_drivers_license_law = gdl, per_se_law = perse,
+         total_fatalities = totfat, nighttime_fatalities = nghtfat,
+         weekend_fatalities = wkndfat, total_fatalities_per_100M_miles = totfatpvm,
+         nighttime_fatalities_per_100M_miles = nghtfatpvm,
+         weekend_fatalities_per_100M_miles = wkndfatpvm,
+         state_population =  statepop, total_fatalities_rate = totfatrte,
+         nighttime_fatalities_rate = nghtfatrte,
+         weekend_fatalities_rate = wkndfatrte,
+         vehicle_miles_traveled = vehicmiles, unemployment_rate = unem,
+         population_aged_14_to_24_rate = perc14_24,
+         speed_limit_70_plus = sl70plus, seat_belt = seatbelt,
+         primary_seatbelt_law = sbprim, secondary_seatbelt_law = sbsecon,
+         miles_driven_per_capita = vehicmilespc)
+# Adding states to the dataframe
+state_df <- data.frame("index" = 1:51,
+                       "state_name" = sort(c(state.name, "District of Columbia")))
+main_df <- merge(df, state_df, by.x = 'state', by.y ='index')
+main_df
+```
 
+```{r eda plots, fig.height=7}
+
+# Time series line plot
+# Variable to plot as var_name
+# Each line gets a color based on the group_name
+# X-axis is always year
+plots.ts.by.group <- function(var_name, group_name) {
+plt <- main_df %>% mutate(factored=factor(main_df[[group_name]])) %>% 
+    ggplot(aes_string(x='year', y=var_name)) + 
+    geom_line(aes(color=factored))
+  return((plt))
+}
+
+# Box plot by group
+# Variable to plot as var_name
+# Each group is plit by group_name
+plots.box.by.group <- function(var_name, group_name) {
+plt <- main_df %>% mutate(factored=factor(main_df[[group_name]])) %>% 
+    ggplot(aes_string(x='factored', y=var_name)) + 
+     geom_boxplot(outlier.colour="red", outlier.shape=8,  outlier.size=4) +
+  theme(axis.text.x=element_text(angle=-90))
+  return((plt))
+}
+
+# Total fatalities
+plt.tf.state = plots.ts.by.group('total_fatalities_rate', 'state_name')
+plt.box = plots.box.by.group('total_fatalities_rate', 'speed_limit_70_plus')
+
+# 
+(plt.tf.state / plt.box)
+```
 # (15 points) Preliminary Model
 
 Estimate a linear regression model of *totfatrte* on a set of dummy variables for the years 1981 through 2004 and interpret what you observe. In this section, you should address the following tasks: 
