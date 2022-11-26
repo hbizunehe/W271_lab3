@@ -317,6 +317,19 @@ Estimate a linear regression model of *totfatrte* on a set of dummy variables fo
     - Are the parameter estimates reliable, unbiased estimates of the truth? Or, are they biased due to the way that the data is structured?
     - Are the uncertainty estimate reliable, unbiased estimates of sampling based variability? Or, are they biased due to the way that the data is structured? 
 
+```{r}
+pooled_ols <- plm(total_fatalities_rate ~ year, data = pdata,
+                  index = c("state", "year"),
+                  effect = "individual", model = "pooling")
+summary(pooled_ols)
+```
+
+> 'Starting from a linear model will give us an easy and intuitively clearer overall pattern over the years via the coefficients on the year dummy variables (or instead by adding group ids as dummy variables) using controlling for any variable of interest, if any. Later on, when we perform panel data analysis, we can compare it against the linear model, justify the result and keep building the intuition on top of the linear model.'  
+
+> 'This model explains the fatality rate over different years compared to the baseline year, which is 1980. All coefficients except for the 1981 year are statistically significant. From this model, we learn that in all years following the baseline up to 2004, the fatality rate goes down compared to the baseline year 1980. The decline increases as the year increases but not consistently, as seen, for example, between 1986 - 1988, where the fatality rate increases compared to previous years. However, it returns to the decline track/trend in 1989. The decrease in coefficients over the years means that driving becomes safer as the fatality rate keeps decreasing. For example, the fatality rate, which was 25.5 as of 1980, became 19.5 in 1990, 16.8 in 2000, and 16.7 in 2004, showing that driving over the years has become safer. In other words, around 8.8 fewer people are predicted to get traffic fatalities out of 100,000 people in 2004 than in 1980.'   
+
+> 'We are ignoring unobserved Heterogeneity and the group structure by taking each entry as a separate observation. Because of that, residuals generally correlate across time and have heteroskedasticity across and/or within groups. Heteroscedastic residuals are a violation of the OLS Homoscedasticity assumption, which will make it difficult to trust the standard error. As a result, the confidence interval can not be trusted as it can be too wide or narrow. Also, the independence assumption (no autocorrelation) is violated since we did not accommodate the lag/trend component, which makes the OLS estimates to be unreliable; in other words, our OLS estimator is not the Best Linear Unbiased Estimator.'   
+
 # (15 points) Expanded Model 
 
 Expand the **Preliminary Model** by adding variables related to the following concepts: 
