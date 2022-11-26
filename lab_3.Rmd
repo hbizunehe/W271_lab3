@@ -55,12 +55,14 @@ load(file="./data/driving.RData")
 # For the fractions, we are taking the majority as a speed limit
 # We skipped year_of_observation since there a year column which aligns with dx
 df <- data %>%
-  mutate(speed_limit = ifelse(sl55 >= 0.5, 55,
-                       ifelse(sl65 >= 0.5, 65,
-                       ifelse(sl70 >= 0.5, 70,
-                       ifelse(sl75 >= 0.5, 75,
-                       ifelse(slnone >= 0.5, 99, 0)
-                       )))),
+  mutate(speed_limit = ifelse(sl55 >= 0.5, '55',
+                       ifelse(sl65 >= 0.5, '65',
+                       ifelse(sl70 >= 0.5, '70',
+                       ifelse(sl75 >= 0.5, '75',
+                       ifelse(slnone >= 0.5, 'none', '0')
+                       ))))) %>%
+           mutate(speed_limit=factor(speed_limit, 
+                  levels=c('55', '65', '70', '75', 'none')),
          blood_alcohol_limit_10 = ifelse(bac10 >= 0.5, 1, 0),
          blood_alcohol_limit_08 = ifelse(bac08 >= 0.5, 1, 0)) %>% 
   mutate(bac=ifelse(blood_alcohol_limit_10==1, '10', 
@@ -78,9 +80,13 @@ df <- data %>%
          weekend_fatalities_rate = wkndfatrte,
          vehicle_miles_traveled = vehicmiles, unemployment_rate = unem,
          population_aged_14_to_24_rate = perc14_24,
-         speed_limit_70_plus = sl70plus, seat_belt = seatbelt,
+         speed_limit_70_plus = sl70plus, 
+         seat_belt = seatbelt,
          primary_seatbelt_law = sbprim, secondary_seatbelt_law = sbsecon,
          miles_driven_per_capita = vehicmilespc) %>%
+  mutate(speed_limit_70_plus = 
+           ifelse(speed_limit_70_plus>0.5, 1, 0)
+           ) %>%
   mutate(seat_belt_law = 
            ifelse(seat_belt==0, 'none',
            ifelse(seat_belt==2, 'secondary', 
@@ -98,7 +104,7 @@ state_df <- data.frame("index" = 1:51,
 main_df <- merge(df, state_df, by.x = 'state', by.y ='index')
 
 pdata <- pdata.frame(main_df, index=c("state", "year"))
-main_df
+head(main_df)
 ```
 
 ```{r eda plots, fig.height=7}
@@ -107,11 +113,15 @@ main_df
 # Variable to plot as var_name
 # Each line gets a color based on the group_name
 # X-axis is always year
-plots.ts.by.group <- function(df, var_name, group_name) {
+plots.ts.by.group <- function(df, var_name, group_name, subtitle='') {
 plt <- df %>% 
   mutate(!!group_name := factor(df[[group_name]])) %>% 
     ggplot(aes_string(x='year', y=var_name, group='state')) + 
-    geom_line(aes_string(color=group_name)) 
+    geom_line(aes_string(color=group_name)) +
+  labs(subtitle=subtitle) +
+  theme(legend.position = c(0.8, 0.8), legend.key.size = unit(0.2, "cm"), 
+        legend.text=element_text(size=rel(0.5)), 
+        legend.title=element_text(size=rel(0.7)))
   return((plt))
 }
 
@@ -119,11 +129,13 @@ plt <- df %>%
 # Box plot by group
 # Variable to plot as var_name
 # Each group is plit by group_name
-plots.box.by.group <- function(df, var_name, group_name) {
+plots.box.by.group <- function(df, var_name, group_name, subtitle='') 
+  {
 plt <- df %>% mutate(factored=factor(df[[group_name]])) %>% 
     ggplot(aes_string(x='factored', y=var_name)) + 
      geom_boxplot(outlier.colour="red", outlier.shape=8,  outlier.size=4) +
   theme(axis.text.x=element_text(angle=-90)) +
+  labs(subtitle=subtitle) +
   xlab(group_name)
   return((plt))
 }
@@ -133,152 +145,174 @@ plt <- df %>% mutate(factored=factor(df[[group_name]])) %>%
 # Variable to plot as var_name
 # Each line gets a color based on the group_name
 # X-axis is always year
-plots.scatter.by.state <- function(df, var_name) {
+plots.scatter.by.state <- function(df, var_name, subtitle='') {
 plt <- df %>% 
-    ggplot(aes_string(x=var_name, y='total_fatalities_rate', group='state')) + 
-    geom_point(aes_string(color='state_name')) 
+    ggplot(aes_string(x=var_name, y='total_fatalities_rate', group='state')) +
+    theme(axis.text.x=element_text(angle=-90)) + 
+    geom_point(aes_string(color='state_name')) +
+  labs(subtitle=subtitle) +
+  theme(legend.position = 'none')
   return((plt))
 }
 
 ```
 
-### Speed limit
+## Main Plots
 
-```{r, fig.width=7}
-plt.ts = plots.ts.by.group(main_df, 'total_fatalities_rate', 'speed_limit')
-plt.box = plots.box.by.group(main_df, 'total_fatalities_rate', 'speed_limit')
-plt.ts | plt.box
-```
-> There is a general decrease in fatalities over time. There also an increase in highway speeds over time which seems to increase the road fatalities. 
-
-### Seat belt requirements 
-
-```{r, fig.width=7}
-plt.ts = plots.ts.by.group(main_df, 'total_fatalities_rate', 'seat_belt_law')
-plt.box = plots.box.by.group(main_df, 'total_fatalities_rate', 'seat_belt_law')
-
-(plt.ts | plt.box)
-```
-
-> Seat belts started to become mandatory starting mis 80s and today there is only one state which does not have it as mandatory. Primary laws are the strictest and allow police to ticket drivers and passengers who are not wearing a proper safety restraint, even if that is the only traffic violation they are committing. Secondary seat belt laws, on the other hand, do not grant law enforcement officials the right to ticket drivers or passengers for failing to wear a safety restraint unless another traffic violation has occurred. There are 15 states with secondary seat belt laws. Source: https://www.cooper-law-firm.com/what-is-the-difference-between-primary-and-secondary-seat-belt-laws/
-
-### Minimum drinking age
-
-```{r, fig.width=7}
-tmp_df <- main_df %>% 
-  mutate(minimum_drinking_age=round(minimum_drinking_age, 0))
-
-plt.ts = plots.ts.by.group(tmp_df, 'total_fatalities_rate', 
-                           'minimum_drinking_age')
-plt.box = plots.box.by.group(tmp_df, 'total_fatalities_rate', 
-                             'minimum_drinking_age')
-plt.scatter = plots.scatter.by.state(main_df, 'minimum_drinking_age')
-
-(plt.ts | plt.box)/plt.scatter
-```
-> There is a general decline in fatality rate with increased minimum driking age. There is also an increase in minimum drinking age over time. 
-
-### population_aged_14_to_24_rate
-
-```{r, fig.width=7}
-tmp_df <- main_df %>% mutate(population_aged_14_to_24_rate=
-                               round(population_aged_14_to_24_rate, 0))
-plt.ts = plots.ts.by.group(tmp_df, 'total_fatalities_rate', 
-                           'population_aged_14_to_24_rate')
-plt.box = plots.box.by.group(tmp_df, 'total_fatalities_rate', 
-                             'population_aged_14_to_24_rate')
-plt.scatter = plots.scatter.by.state(main_df, 'population_aged_14_to_24_rate')
-
-(plt.ts | plt.box)/plt.scatter
-```
-> There is a general increase in fatality rate with a higher percentage of younger population. There is also a trend down of the younger population over time. 
-
-### Graduated drivers licence law
-
-```{r, fig.width=7}
-tmp_df <- main_df %>% 
-  mutate(graduated_drivers_license_law=round(graduated_drivers_license_law, 0))
-plt.ts = plots.ts.by.group(
-  tmp_df, 'total_fatalities_rate', 'graduated_drivers_license_law')
-
-tmp_df <- tmp_df %>% filter(year>1992)
-plt.box = plots.box.by.group(
-  tmp_df, 'total_fatalities_rate', 'graduated_drivers_license_law')
-plt.ts | plt.box
-```
-> The graduated drivers licence law was started to be introduced in the late 90's. The box plot, which has been filtered for years greater than 1992, suggests that even for that time frame, there is a reduction in fatality rate between the two groups.
-
-### Graduated drivers licence law
-
-```{r, fig.width=7}
-tmp_df <- main_df %>% 
-  mutate(graduated_drivers_license_law=round(graduated_drivers_license_law, 0))
-plt.ts = plots.ts.by.group(
-  tmp_df, 'total_fatalities_rate', 'graduated_drivers_license_law')
-
-tmp_df <- tmp_df %>% filter(year>1992)
-plt.box = plots.box.by.group(
-  tmp_df, 'total_fatalities_rate', 'graduated_drivers_license_law')
-plt.ts | plt.box
-```
-> The graduated drivers licence law was started to be introduced in the late 90's. The box plot, which has been filtered for years greater than 1992, suggests that even for that time frame, there is a reduction in fatality rate between the two groups.
-
-### Per-Se law
-
-```{r, fig.width=7}
-# tmp_df <- main_df %>% 
-#   mutate(per_se_law=round(per_se_law, 0))
-
-plt.ts = plots.ts.by.group(
-  main_df, 'total_fatalities_rate', 'per_se_law')
-
-plt.box = plots.box.by.group(
-  main_df, 'total_fatalities_rate', 'per_se_law')
-plt.ts | plt.box
-```
-> The graduated drivers licence law was started to be introduced in the late 90's. The box plot, which has been filtered for years greater than 1992, suggests that even for that time frame, there is a reduction in fatality rate between the two groups.
-
-### Blood alcohol concentration
-
-```{r, fig.width=7}
-tmp_df <- main_df %>% 
-  mutate(bac=ifelse(blood_alcohol_limit_10==1, '10', 
-             ifelse(blood_alcohol_limit_08==1, '8', 'none'))) %>%
-  mutate(bac=factor(bac, levels=c('8', '10', 'none')))
-
-plt.ts = plots.ts.by.group(
-  tmp_df, 'total_fatalities_rate', 'bac')
-plt.box = plots.box.by.group(
-  tmp_df, 'total_fatalities_rate', 'bac')
-plt.ts | plt.box
-```
-> The graduated drivers licence law was started to be introduced in the late 90's. The box plot, which has been filtered for years greater than 1992, suggests that even for that time frame, there is a reduction in fatality rate between the two groups.
-
-
-### Miles drive per capita
-
-```{r, fig.width=7}
-plt.scatter.1 = plots.scatter.by.state(main_df, 'miles_driven_per_capita')
-plt.scatter.2 = plots.scatter.by.state(main_df, 'unemployment_rate')
-plt.scatter.3 = plots.scatter.by.state(main_df, 'minimum_drinking_age')
-
-plt.scatter.1 / plt.scatter.2 / plt.scatter.3
-```
-
-```{r overall mean EDA}
+```{r overall mean EDA, echo=FALSE}
 # Average mean for total_fatalities_rate over years
-pdata %>%
+main_plt <- main_df %>%
   group_by(year) %>%
   summarise(mean = mean(total_fatalities_rate), n = n()) %>%
-  ggplot(aes(x = as.Date(year,"%Y"), y = mean)) +
+  ggplot(aes(x = year, y = mean)) +
   geom_line() +
   labs(title = "Average mean fatality rate across US",
        subtitle = "Fatality rate is going down",
        x = "Year",  y = "Fatality Rate") +
   theme(legend.position = "none")
+
+main_plt
+```
+\newpage
+```{r, fig.width=8, fig.height=11, echo=FALSE}
+
+# Speed limit
+plt.ts.sl = plots.ts.by.group(
+  main_df, 'total_fatalities_rate', 'speed_limit',
+  subtitle='Traffic fatalities in state colored by speed limit')
+
+tmp_df <- main_df %>% filter(year>1987)
+plt.box.sl = plots.box.by.group(
+  tmp_df, 'total_fatalities_rate', 'speed_limit',
+  subtitle='Fatalities comparison for year > 1987')
+
+# Speed limit
+plt.ts.sl70p = plots.ts.by.group(
+  main_df, 'total_fatalities_rate', 'speed_limit_70_plus',
+  subtitle='Traffic fatalities in state colored by speed limit > 70mph')
+
+tmp_df <- main_df %>% filter(year>1995)
+plt.box.sl70p = plots.box.by.group(
+  tmp_df, 'total_fatalities_rate', 'speed_limit_70_plus',
+  subtitle='Fatalities comparison for year > 1987')
+
+# Seat belt law
+plt.ts.sb = plots.ts.by.group(
+  main_df, 'total_fatalities_rate', 'seat_belt_law',
+  subtitle='Traffic fatalities in state colored by seat belt laws')
+
+tmp_df <- main_df %>% filter(year>1987)
+plt.box.sb = plots.box.by.group(
+  tmp_df, 'total_fatalities_rate', 'seat_belt_law',
+  subtitle='Fatalities comparison for year > 1987')
+
+# Graduated drivers licence law
+tmp_df <- main_df %>% mutate(
+  graduated_drivers_license_law=round(graduated_drivers_license_law, 0))
+plt.ts.gdl = plots.ts.by.group(tmp_df, 
+  'total_fatalities_rate', 'graduated_drivers_license_law',
+  subtitle='Traffic fatalities in state colored by graduated drivers licence laws')
+
+tmp_df <- tmp_df %>% filter(year>1995)
+plt.box.gdl = plots.box.by.group(
+  tmp_df, 'total_fatalities_rate', 'graduated_drivers_license_law',
+  subtitle='Fatalities comparison for year > 1995')
+
+# Per-Se law
+tmp_df <- main_df
+plt.ts.ps = plots.ts.by.group(tmp_df, 
+  'total_fatalities_rate', 'per_se_law',
+  subtitle='Traffic fatalities in state colored by Per-se law')
+
+tmp_df <- tmp_df %>% filter(year>1990)
+plt.box.ps = plots.box.by.group(
+  tmp_df, 'total_fatalities_rate', 'per_se_law',
+  subtitle='Fatalities comparison for year > 1990')
+
+# BAC levels
+plt.ts.bac = plots.ts.by.group(
+  main_df, 'total_fatalities_rate', 'bac',
+  subtitle='Traffic fatalities in state colored by BAC level')
+plt.box.bac = plots.box.by.group(
+  main_df %>% filter(year>1990), 'total_fatalities_rate', 'bac',
+  subtitle='Fatalities comparison for year > 1990')
+
+
+(plt.ts.sl | plt.box.sl)/(plt.ts.sl70p | plt.box.sl70p)/
+ (plt.ts.sb | plt.box.sb)/(plt.ts.gdl | plt.box.gdl)/
+  (plt.ts.ps | plt.box.ps) /(plt.ts.bac | plt.box.bac)
 ```
 
-> 'In the past few decades, the average fatality rate has gone down in the US. During the late 80s, there was an increase in the fatality rate, which was followed by a decline in a few years.'  
+### Description of factor independent variables
+
+> The highway speed limit was uniformly 55mph across all states before 1987. Since then, different states have adopted different speed limits. Especially in 1997, there was a signifcant increase in highway speeds across multiple states.The box plot compares the fatality rate across different speed limits  filtered for years greater than 1987. We see that increasing speed limits are associated with increased fatality rates. As there are states with no speed limit, this variables has been treated as a factor. 
+
+> Now thresholding speed limits for greater or lower than 70mph shows a similar pattern of higher speeds associated with a higher fatality rate.
+
+> Seat belts started to become mandatory starting mid to late 80s and today there is only one state which does not have it as mandatory. Primary laws are the strictest and allow police to ticket drivers and passengers who are not wearing a proper safety restraint, even if that is the only traffic violation they are committing. Secondary seat belt laws, on the other hand, do not grant law enforcement officials the right to ticket drivers or passengers for failing to wear a safety restraint unless another traffic violation has occurred. There are 15 states with secondary seat belt laws. Source: https://www.cooper-law-firm.com/what-is-the-difference-between-primary-and-secondary-seat-belt-laws/. 
+
+> The graduated drivers licence law was started to be introduced in the late 90's. The box plot, which has been filtered for years greater than 1995, suggests that even for that time frame, there is a reduction in fatality rate between the two groups.
+
+> Some states had Per-Se laws before the start of the data in 1980 and some still did not have Per-Se laws in 2004. There is a gradual increase in the adoption of the law from 1980 to about the 2000s. Surorisingly, there is an increase in fatality rates in comparison of data with PerSe law as compared to without. 
+
+> BAC level
+
+### Description of continous variables
+
+```{r, fig.width=8, fig.height=9, echo=FALSE}
+
+# population_aged_14_to_24_rate
+tmp_df <- main_df %>% mutate(population_aged_14_to_24_rate=
+                               round(population_aged_14_to_24_rate/3, 0) *3)
+plt.ts.perc = plots.ts.by.group(
+  tmp_df, 'total_fatalities_rate', 'population_aged_14_to_24_rate',
+  subtitle='Traffic fatalities in state colored by population 14 to 24 age rate')
+
+tmp_df <- main_df %>% filter(year>1980)
+plt.scatter.perc = plots.scatter.by.state(
+  tmp_df, 'population_aged_14_to_24_rate',
+  subtitle='population aged 14 to 24_rate relationship to fatality rate')
+
+# Miles driven per capita
+tmp_df <- main_df %>% mutate(miles_driven_per_capita=
+                               round(miles_driven_per_capita/2000, 0)*2000)
+plt.ts.mpc = plots.ts.by.group(
+  tmp_df, 'total_fatalities_rate', 'miles_driven_per_capita',
+  subtitle='Traffic fatalities in state colored by miles_driven_per_capita')
+
+plt.scatter.mpc = plots.scatter.by.state(
+  tmp_df, 'miles_driven_per_capita',
+  subtitle='miles driven per capita relationship to fatality rate')
+
+# Unemployment rate
+tmp_df <- main_df %>% mutate(unemployment_rate=round(unemployment_rate/3, 0)*3)
+
+plt.ts.ur = plots.ts.by.group(
+  tmp_df, 'total_fatalities_rate', 'unemployment_rate',
+  subtitle='Traffic fatalities in state colored by unemployment rate')
+
+plt.scatter.ur = plots.scatter.by.state(
+  tmp_df, 'unemployment_rate',
+  subtitle='unemployment rate relationship to fatality rate')
+
+# Minimum drinking age
+tmp_df <- main_df %>% mutate(minimum_drinking_age=round(minimum_drinking_age, 0))
+plt.ts.mda = plots.ts.by.group(
+  tmp_df, 'total_fatalities_rate', 'minimum_drinking_age',
+  subtitle='Traffic fatalities in state colored by minimum drinking age')
+
+plt.scatter.mda = plots.scatter.by.state(
+  main_df, 'minimum_drinking_age',
+  subtitle='Minimum drinking age relationship to fatality rate')
+
+
+(plt.ts.perc | plt.scatter.perc) /  (plt.ts.mpc | plt.scatter.mpc) /
+  (plt.ts.ur | plt.scatter.ur) / (plt.ts.mda | plt.scatter.mda)
+```
+
+> There is a decrease in the percetage of 14 to 24 year olds in the population over time. This is correlated to the decrease in the fatalities during that time period.
+
+
 
 ```{r, fatality rate by state EDA, fig.height=6, fig.width=12}
 cut_point <- c(-1, 12, 24, 36, 48)
@@ -345,13 +379,22 @@ expanded.ols.data <- main_df %>% select(c(total_fatalities_rate, bac, per_se_law
                    miles_driven_per_capita, year, state_name
                    )) 
 
-expanded.ols <- lm(
-  total_fatalities_rate ~  factor(year) + bac + population_aged_14_to_24_rate + 
-    miles_driven_per_capita + unemployment_rate +
-    speed_limit_70_plus +
-    per_se_law + seat_belt_law + graduated_drivers_license_law, 
-  data = expanded.ols.data)
+# expanded.ols <- lm(
+#   total_fatalities_rate ~  factor(year) + bac + population_aged_14_to_24_rate + 
+#     miles_driven_per_capita + unemployment_rate +
+#     speed_limit_70_plus +
+#     per_se_law + seat_belt_law + graduated_drivers_license_law, 
+#   data = expanded.ols.data)
 
+main_p <- pdata.frame(main_df, index=c("state", "year"))
+
+expanded.ols <- plm(total_fatalities_rate ~  state + bac + 
+                      population_aged_14_to_24_rate + miles_driven_per_capita + 
+                      unemployment_rate + speed_limit_70_plus + per_se_law + 
+                      seat_belt_law + graduated_drivers_license_law,
+                    data = main_p,
+                  index = c("state", "year"),
+                  effect = "individual", model = "pooling")
 summary(expanded.ols)
 
 ```
