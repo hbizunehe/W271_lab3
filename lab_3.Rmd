@@ -147,9 +147,9 @@ plt <- df %>% mutate(factored=factor(df[[group_name]])) %>%
 # X-axis is always year
 plots.scatter.by.state <- function(df, var_name, subtitle='') {
 plt <- df %>% 
-    ggplot(aes_string(x=var_name, y='total_fatalities_rate', group='state')) +
-    theme(axis.text.x=element_text(angle=-90)) + 
-    geom_point(aes_string(color='state_name')) +
+    ggplot(aes_string(x=var_name, y='total_fatalities_rate')) +
+    geom_point(aes(color=state_name)) + 
+  geom_smooth(method = lm, formula = y ~ x) + 
   labs(subtitle=subtitle) +
   theme(legend.position = 'none')
   return((plt))
@@ -243,7 +243,9 @@ plt.box.bac = plots.box.by.group(
   (plt.ts.ps | plt.box.ps) /(plt.ts.bac | plt.box.bac)
 ```
 
-### Description of factor independent variables
+## Description of variables
+
+### Factor variables
 
 > The highway speed limit was uniformly 55mph across all states before 1987. Since then, different states have adopted different speed limits. Especially in 1997, there was a signifcant increase in highway speeds across multiple states.The box plot compares the fatality rate across different speed limits  filtered for years greater than 1987. We see that increasing speed limits are associated with increased fatality rates. As there are states with no speed limit, this variables has been treated as a factor. 
 
@@ -255,7 +257,7 @@ plt.box.bac = plots.box.by.group(
 
 > Some states had Per-Se laws before the start of the data in 1980 and some still did not have Per-Se laws in 2004. There is a gradual increase in the adoption of the law from 1980 to about the 2000s. Surorisingly, there is an increase in fatality rates in comparison of data with PerSe law as compared to without. 
 
-> BAC level
+> Most states had adopted a BAC limit by the mid 80s with two states choosing a limit only in 2002. 
 
 ### Description of continous variables
 
@@ -270,7 +272,7 @@ plt.ts.perc = plots.ts.by.group(
 
 tmp_df <- main_df %>% filter(year>1980)
 plt.scatter.perc = plots.scatter.by.state(
-  tmp_df, 'population_aged_14_to_24_rate',
+  main_df, 'population_aged_14_to_24_rate',
   subtitle='population aged 14 to 24_rate relationship to fatality rate')
 
 # Miles driven per capita
@@ -281,7 +283,7 @@ plt.ts.mpc = plots.ts.by.group(
   subtitle='Traffic fatalities in state colored by miles_driven_per_capita')
 
 plt.scatter.mpc = plots.scatter.by.state(
-  tmp_df, 'miles_driven_per_capita',
+  main_df, 'miles_driven_per_capita',
   subtitle='miles driven per capita relationship to fatality rate')
 
 # Unemployment rate
@@ -292,7 +294,7 @@ plt.ts.ur = plots.ts.by.group(
   subtitle='Traffic fatalities in state colored by unemployment rate')
 
 plt.scatter.ur = plots.scatter.by.state(
-  tmp_df, 'unemployment_rate',
+  main_df, 'unemployment_rate',
   subtitle='unemployment rate relationship to fatality rate')
 
 # Minimum drinking age
@@ -310,8 +312,13 @@ plt.scatter.mda = plots.scatter.by.state(
   (plt.ts.ur | plt.scatter.ur) / (plt.ts.mda | plt.scatter.mda)
 ```
 
-> There is a decrease in the percetage of 14 to 24 year olds in the population over time. This is correlated to the decrease in the fatalities during that time period.
+> There is a decrease in the percentage of 14 to 24 year olds in the population over time. This is correlated to the decrease in the fatalities during that time period.
 
+> Miles driven per capita also has a positive relationship with fatality rate. An increase in miles driven is associated with an increase in fatality rate 
+
+> There is an increase in failure rate with an increase in unemployment rate. 
+
+> The minimum drinking age has been 21 in most states since the late 80s. There is a general decrease in fatality  rate with an increased minimum drinking age but there also has been a general decrease in fatality rates during the time period when the age limits were changed. 
 
 
 ```{r, fatality rate by state EDA, fig.height=6, fig.width=12}
@@ -366,64 +373,128 @@ summary(pooled_ols)
 
 # (15 points) Expanded Model 
 
-Expand the **Preliminary Model** by adding variables related to the following concepts: 
+```{r echo=FALSE}
+# Expand the **Preliminary Model** by adding variables related to the following concepts: 
+# 
+# - Blood alcohol levels 
+# - Per se laws
+# - Primary seat belt laws (Note that if a law was enacted sometime within a year the fraction of the year is recorded in place of the zero-one indicator.)
+# - Secondary seat belt laws 
+# - Speed limits faster than 70 
+# - Graduated drivers licenses 
+# - Percent of the population between 14 and 24 years old
+# - Unemployment rate
+# - Vehicle miles driven per capita. 
+# 
+# If it is appropriate, include transformations of these variables. Please carefully explain carefully your rationale, which should be based on your EDA, behind any transformation you made. If no transformation is made, explain why transformation is not needed. 
+# 
+# - How are the blood alcohol variables defined? Interpret the coefficients that you estimate for this concept. 
+# - Do *per se laws* have a negative effect on the fatality rate? 
+# - Does having a primary seat belt law? 
+#   
+```
 
-- Blood alcohol levels 
-- Per se laws
-- Primary seat belt laws (Note that if a law was enacted sometime within a year the fraction of the year is recorded in place of the zero-one indicator.)
-- Secondary seat belt laws 
-- Speed limits faster than 70 
-- Graduated drivers licenses 
-- Percent of the population between 14 and 24 years old
-- Unemployment rate
-- Vehicle miles driven per capita. 
+## Transformation(treatment) of variables
 
-If it is appropriate, include transformations of these variables. Please carefully explain carefully your rationale, which should be based on your EDA, behind any transformation you made. If no transformation is made, explain why transformation is not needed. 
+> States where highway speeds were made over 70mph during the middle of the year contained a frcational value for that year. The fraction was thresholded at 0.5 to make this a binary variable. As there is no meaningful interpretation for this variable as a continuous value, this thresholding was neccesary to convert it into a factor.
 
-- How are the blood alcohol variables defined? Interpret the coefficients that you estimate for this concept. 
-- Do *per se laws* have a negative effect on the fatality rate? 
-- Does having a primary seat belt law? 
+> A state can have a primary, secondary or no seat belt laws. The seat_belt_law reflects these three factors compbined into one variable. 
+
+> Graduated drivers licence law and per-se law parameters both have frcational value for years wwhere the law was implemented mid-year. The fractions was threolded at 0.5 to make this a binary variable. As there is no meaningful interpretation for these variables as a continuous value, this thresholding was neccesary to convert them into a factor.
+
+> Although Blood alcohol content (BAC) levels of 8PPM or 10PPM lends itself to a numeric interpretation, there is no numeric value associated with no BAC limit. For this reason BAC has been treated as a factor variable with levels none, 10 and 8. 
+
+> None of the continous variables, namely, unemployment rate, miles drive per capita, rate of 14 to 24 aged people in population required any transformation. This can be seen in the correlation plots in Figure y.
+
 
 ```{r expanded model}
 expanded.ols.data <- main_df %>% select(c(total_fatalities_rate, bac, per_se_law, 
                    seat_belt_law, graduated_drivers_license_law,
                    population_aged_14_to_24_rate, minimum_drinking_age,
                    unemployment_rate, speed_limit_70_plus, 
-                   miles_driven_per_capita, year, state_name
+                   miles_driven_per_capita, year, state
                    )) 
 
-# expanded.ols <- lm(
-#   total_fatalities_rate ~  factor(year) + bac + population_aged_14_to_24_rate + 
-#     miles_driven_per_capita + unemployment_rate +
-#     speed_limit_70_plus +
-#     per_se_law + seat_belt_law + graduated_drivers_license_law, 
-#   data = expanded.ols.data)
-
-main_p <- pdata.frame(main_df, index=c("state", "year"))
-
-expanded.ols <- plm(total_fatalities_rate ~  state + bac + 
+main_p <- pdata.frame(expanded.ols.data, index=c("state", "year"))
+expanded.ols <- plm(total_fatalities_rate ~  year + bac + 
                       population_aged_14_to_24_rate + miles_driven_per_capita + 
                       unemployment_rate + speed_limit_70_plus + per_se_law + 
                       seat_belt_law + graduated_drivers_license_law,
                     data = main_p,
                   index = c("state", "year"),
                   effect = "individual", model = "pooling")
-summary(expanded.ols)
-
 ```
+
+As we have used an OLS regression for a time series, we expect the residuals to be correlated. We perform a Ljung-Box test to check this. The Null hypothesis is that the series is not autocorrelated and the alternate hypothesis is that the series is autocorrelated. We test with an of $\alpha=0.05$.
+```{r}
+expanded.ols %>% residuals() %>% Box.test(type='Ljung-Box') -> lb.res
+```
+With a p value of `r lb.res$p.value` less than $\alpha$, we reject the Null hypothesis that the series is not auto-correlated. As the residuals are autocorrelated, the standard error of the parameters cannot be trusted. We review the model parameters with this in mind.
+
+```{r}
+summary(expanded.ols)
+```
+
+## Interpretation of results 
+
+###  How are the blood alcohol variables defined? Interpret the coefficients that you estimate for this concept. 
+
+> In an earlier section we have defined our treatmnet of the BAC variable as a factir with levels none, 10 and 8. In this model we note that the base level is no blood alcohol limit. We also note that bac value of 0.1% and 0.08% are both statistically significant parameters. The model suggests that setting a blood alcohol limit of 0.1% is associated with a ```r abs(round(coef(expanded.ols)['bac10'], 2))``` unit decrease in fatality rate as compared to no BAC limit.  The model suggests that a setting a blood alcohol limit of 0.08% is associated with a ```r abs(round(coef(expanded.ols)['bac8'], 2))``` unit decrease in fatality rate as compared to no BAC limit.
+    
+### Do *per se laws* have a negative effect on the fatality rate? 
+
+> We note that per-se law is a statistically significant parameter. The model suggests that havng a per-se law is associated with a ```r abs(round(coef(expanded.ols)['per_se_law1'], 2))``` unit decrease in fatality rate as compared to not having per-se law.
+
+### Does having a primary seat belt law reduce fatality rates?
+
+> We note that the seat belt law factors are not statistically significant.
 
 # (15 points) State-Level Fixed Effects 
 
 Re-estimate the **Expanded Model** using fixed effects at the state level. 
 
-- What do you estimate for coefficients on the blood alcohol variables? How do the coefficients on the blood alcohol variables change, if at all? 
-- What do you estimate for coefficients on per se laws? How do the coefficients on per se laws change, if at all? 
-- What do you estimate for coefficients on primary seat-belt laws? How do the coefficients on primary seatbelt laws change, if at all? 
+```{r echo=FALSE}
+# - What do you estimate for coefficients on the blood alcohol variables? How do the coefficients on the blood alcohol variables change, if at all? 
+# - What do you estimate for coefficients on per se laws? How do the coefficients on per se laws change, if at all? 
+# - What do you estimate for coefficients on primary seat-belt laws? How do the coefficients on primary seatbelt laws change, if at all? 
+# 
+# Which set of estimates do you think is more reliable? Why do you think this? 
+# 
+# - What assumptions are needed in each of these models?  
+# - Are these assumptions reasonable in the current context?
+```
 
-Which set of estimates do you think is more reliable? Why do you think this? 
+Model estimation for a fixed effect(within) model.
 
-- What assumptions are needed in each of these models?  
-- Are these assumptions reasonable in the current context?
+```{r within model}
+expanded.within <- plm(total_fatalities_rate ~  bac + year +
+                      population_aged_14_to_24_rate + miles_driven_per_capita + 
+                      unemployment_rate + speed_limit_70_plus + per_se_law + 
+                      seat_belt_law + graduated_drivers_license_law,
+                    data = main_p,
+                  index = c("state", "year"),
+                  effect = "individual", model = "within")
+
+summary(expanded.within)
+```
+
+## Interpretation of model
+
+### What do you estimate for coefficients on the blood alcohol variables? How do the coefficients on the blood alcohol variables change, if at all? 
+
+> We also note that bac value of 0.1% and 0.08% are both statistically significant parameters. 
+
+  * This model suggests that setting a blood alcohol limit of 0.1% is associated with a ```r abs(round(coef(expanded.within)['bac10'], 2))``` unit decrease in fatality rate as compared to no BAC limit. Compared to the OLS model which showed that setting a blood alcohol limit of 0.1% is associated with a ```r abs(round(coef(expanded.ols)['bac10'], 2))``` unit decrease in fatality rate as compared to no BAC limit. 
+  * This model suggests that a setting a blood alcohol limit of 0.08% is associated with a ```r abs(round(coef(expanded.within)['bac8'], 2))``` unit decrease in fatality rate as compared to no BAC limit. Compared to the OLS model which showed that setting a blood alcohol limit of 0.08% is associated with a ```r abs(round(coef(expanded.within)['bac8'], 2))``` unit decrease in fatality rate as compared to no BAC limit.
+
+### What do you estimate for coefficients on per se laws? How do the coefficients on per se laws change, if at all? 
+
+> We note that per-se law is a statistically significant parameter. This model suggests that having a per-se law is associated with a ```r abs(round(coef(expanded.within)['per_se_law1'], 2))``` unit decrease in fatality rate as compared to not having per-se law. Compared to the OLS model which showed that havng a per-se law is associated with a ```r abs(round(coef(expanded.ols)['per_se_law1'], 2))``` unit decrease in fatality rate as compared to not having per-se law
+
+
+### What do you estimate for coefficients on primary seat-belt laws? How do the coefficients on primary seatbelt laws change, if at all?
+
+> In this model we note that seat belt primary law is a signifcant factor. This model suggests that having a primary seat belt law is associated with a ```r abs(round(coef(expanded.within)['seat_belt_lawprimary'], 2))``` unit decrease in fatality rate as compared to not having  primary seat belt law. 
 
 # (10 points) Consider a Random Effects Model 
 
