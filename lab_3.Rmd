@@ -1,8 +1,11 @@
 ---
 title: 'Lab 3: Panel Models'
 subtitle: 'US Traffic Fatalities: 1980 - 2004'
-output: 
-  bookdown::pdf_document2: default
+output:
+    pdf_document: 
+      toc: true
+      toc_depth: 4
+      number_sections: true
 ---
 
 ```{r load packages, echo=FALSE, message=FALSE}
@@ -16,6 +19,8 @@ library(patchwork)
 library(stargazer)
 ```
 
+
+\newpage
 # U.S. traffic fatalities: 1980-2004
 
 In this lab, we are asking you to answer the following **causal** question: 
@@ -37,20 +42,16 @@ load(file="./data/driving.RData")
 
 # (30 points, total) Build and Describe the Data 
 
+## (5 points) Load the data and produce useful features. 
+
 ```{r echo=FALSE}
-# 1. (5 points) Load the data and produce useful features. Specifically: 
 #     - Produce a new variable, called `speed_limit` that re-encodes the data that is in `sl55`, `sl65`, `sl70`, `sl75`, and `slnone`; 
 #     - Produce a new variable, called `year_of_observation` that re-encodes the data that is in `d80`, `d81`, ... , `d04`. 
 #     - Produce a new variable for each of the other variables that are one-hot encoded (i.e. `bac*` variable series). 
-#     - Rename these variables to sensible names that are legible to a reader of your analysis. For example, the dependent variable as provided is called, `totfatrte`. Pick something more sensible, like, `total_fatalities_rate`. There are few enough of these variables to change, that you should change them for all the variables in the data. (You will thank yourself later.)
-# 2. (5 points) Provide a description of the basic structure of the dataset. What is this data? How, where, and when is it collected? Is the data generated through a survey or some other method? Is the data that is presented a sample from the population, or is it a *census* that represents the entire population? Minimally, this should include:
-#     - How is the our dependent variable of interest `total_fatalities_rate` defined? 
-# 3. (20 points) Conduct a very thorough EDA, which should include both graphical and tabular techniques, on the dataset, including both the dependent variable `total_fatalities_rate` and the potential explanatory variables. Minimally, this should include: 
-#     - How is the our dependent variable of interest `total_fatalities_rate` defined? 
-#     - What is the average of `total_fatalities_rate` in each of the years in the time period covered in this dataset? 
-# 
-# As with every EDA this semester, the goal of this EDA is not to document your own process of discovery -- save that for an exploration notebook -- but instead it is to bring a reader that is new to the data to a full understanding of the important features of your data as quickly as possible. In order to do this, your EDA should include a detailed, orderly narrative description of what you want your reader to know. Do not include any output -- tables, plots, or statistics -- that you do not intend to write about.
+#     - Rename these variables to sensible names that are legible to a reader of your analysis. For example, the dependent variable as provided is called, `totfatrte`. Pick something more sensible, like, `total_fatalities_rate`. There are few enough of these
 ```
+
+#### Status complete: TODO Check for completeness
 
 ```{r reencode}
 # For the fractions, we are taking the majority as a speed limit
@@ -108,7 +109,37 @@ pdata <- pdata.frame(main_df, index=c("state", "year"))
 head(main_df)
 ```
 
-```{r eda plots, fig.height=7}
+## (5 points) Provide a description of the basic structure of the dataset. 
+
+```{r echo=FALSE}
+# What is this data? How, where, and when is it collected? Is the data generated through a survey or some other method? Is the data that is presented a sample from the population, or is it a *census* that represents the entire population?
+# Minimally, this should include:
+#     - How is the our dependent variable of interest `total_fatalities_rate` defined? 
+```
+
+#### Status not-started
+
+> TODO
+> TODO
+
+##  (20 points) Conduct a very thorough EDA
+
+```{r echo=FALSE}
+# which should include both graphical and tabular techniques, on the dataset, including both the dependent variable `total_fatalities_rate` and the potential explanatory variables
+# Minimally,
+#     - How is the our dependent variable of interest `total_fatalities_rate` defined? 
+#     - What is the average of `total_fatalities_rate` in each of the years in the time period covered in this dataset? 
+# 
+# As with every EDA this semester, the goal of this EDA is not to document your own process of discovery -- save that for an exploration notebook -- but instead it is to bring a reader that is new to the data to a full understanding of the important features of your data as quickly as possible. In order to do this, your EDA should include a detailed, orderly narrative description of what you want your reader to know. Do not include any output -- tables, plots, or statistics -- that you do not intend to write about.
+```
+
+#### Status Complete: Check for completeness
+
+> TODO
+> TODO
+
+
+```{r eda plots, fig.height=7, echo=FALSE}
 
 # Time series line plot
 # Variable to plot as var_name
@@ -158,8 +189,11 @@ plt <- df %>%
 
 ```
 
-## Main Plots
+### Average and state wide trends
 
+#### Status Incomplete: Refer to graphs and add descriptive text. Does the dependent variable require a transformation?
+
+\newpage
 ```{r overall mean EDA, echo=FALSE}
 # Average mean for total_fatalities_rate over years
 main_plt <- main_df %>%
@@ -174,7 +208,31 @@ main_plt <- main_df %>%
 
 main_plt
 ```
+
+
+```{r, fatality rate by state EDA, fig.height=6, fig.width=12, echo=FALSE}
+cut_point <- c(-1, 12, 24, 36, 48)
+plots <- vector('list', 4)
+
+for (i in 2:5) {
+  plots[[i-1]] <- (pdata %>%
+    filter(as.integer(state) > cut_point[i-1] & as.integer(state) <= cut_point[i]) %>%
+    ggplot(aes(x = as.Date(year,"%Y"), y = total_fatalities_rate)) +
+    geom_line() +
+    facet_wrap(~ state_name, nrow = 3, ncol=4) +
+    labs(x = "Year",  y = "Total Fatalities Rate") +
+    theme(legend.position = "none"))
+}
+
+grid.arrange(plots[[1]], plots[[2]], plots[[3]], plots[[4]], nrow = 2, ncol = 2,
+             top = textGrob("Fatality rate by states", gp=gpar(fontsize=20)))
+```
+
+> 'For most states, fatality rates go down over the years, but some states like Alabama and Arkansas do not show many changes. Surprisingly, Mississippi has an increase in the fatality rate.' 
+
+
 \newpage
+
 ```{r, fig.width=8, fig.height=11, echo=FALSE}
 
 # Speed limit
@@ -241,27 +299,24 @@ plt.box.bac = plots.box.by.group(
 
 (plt.ts.sl | plt.box.sl)/(plt.ts.sl70p | plt.box.sl70p)/
  (plt.ts.sb | plt.box.sb)/(plt.ts.gdl | plt.box.gdl)/
-  (plt.ts.ps | plt.box.ps) /(plt.ts.bac | plt.box.bac)
+  (plt.ts.ps | plt.box.ps) /(plt.ts.bac | plt.box.bac) +
+  plot_annotation(title='Time series and distribution comparisons of factor variables')
 ```
 
-## Description of variables
+### Description of variables
 
-### Factor variables
+#### Status incomplete: TODO: Add figur enumber references to each graph
 
-> The highway speed limit was uniformly 55mph across all states before 1987. Since then, different states have adopted different speed limits. Especially in 1997, there was a signifcant increase in highway speeds across multiple states.The box plot compares the fatality rate across different speed limits  filtered for years greater than 1987. We see that increasing speed limits are associated with increased fatality rates. As there are states with no speed limit, this variables has been treated as a factor. 
+#### Factor variables
 
-> Now thresholding speed limits for greater or lower than 70mph shows a similar pattern of higher speeds associated with a higher fatality rate.
+* The highway speed limit was uniformly 55mph across all states before 1987. Since then, different states have adopted different speed limits. Especially in 1997, there was a signifcant increase in highway speeds across multiple states.The box plot compares the fatality rate across different speed limits  filtered for years greater than 1987. We see that increasing speed limits are associated with increased fatality rates. As there are states with no speed limit, this variables has been treated as a factor. 
+* Now thresholding speed limits for greater or lower than 70mph shows a similar pattern of higher speeds associated with a higher fatality rate.
+* Seat belts started to become mandatory starting mid to late 80s and today there is only one state which does not have it as mandatory. Primary laws are the strictest and allow police to ticket drivers and passengers who are not wearing a proper safety restraint, even if that is the only traffic violation they are committing. Secondary seat belt laws, on the other hand, do not grant law enforcement officials the right to ticket drivers or passengers for failing to wear a safety restraint unless another traffic violation has occurred. There are 15 states with secondary seat belt laws. Source: https://www.cooper-law-firm.com/what-is-the-difference-between-primary-and-secondary-seat-belt-laws/. 
+* The graduated drivers licence law was started to be introduced in the late 90's. The box plot, which has been filtered for years greater than 1995, suggests that even for that time frame, there is a reduction in fatality rate between the two groups.
+* Some states had Per-Se laws before the start of the data in 1980 and some still did not have Per-Se laws in 2004. There is a gradual increase in the adoption of the law from 1980 to about the 2000s. Surorisingly, there is an increase in fatality rates in comparison of data with PerSe law as compared to without. 
+* Most states had adopted a BAC limit by the mid 80s with two states choosing a limit only in 2002. 
 
-> Seat belts started to become mandatory starting mid to late 80s and today there is only one state which does not have it as mandatory. Primary laws are the strictest and allow police to ticket drivers and passengers who are not wearing a proper safety restraint, even if that is the only traffic violation they are committing. Secondary seat belt laws, on the other hand, do not grant law enforcement officials the right to ticket drivers or passengers for failing to wear a safety restraint unless another traffic violation has occurred. There are 15 states with secondary seat belt laws. Source: https://www.cooper-law-firm.com/what-is-the-difference-between-primary-and-secondary-seat-belt-laws/. 
-
-> The graduated drivers licence law was started to be introduced in the late 90's. The box plot, which has been filtered for years greater than 1995, suggests that even for that time frame, there is a reduction in fatality rate between the two groups.
-
-> Some states had Per-Se laws before the start of the data in 1980 and some still did not have Per-Se laws in 2004. There is a gradual increase in the adoption of the law from 1980 to about the 2000s. Surorisingly, there is an increase in fatality rates in comparison of data with PerSe law as compared to without. 
-
-> Most states had adopted a BAC limit by the mid 80s with two states choosing a limit only in 2002. 
-
-### Description of continous variables
-
+\newpage
 ```{r, fig.width=8, fig.height=9, echo=FALSE}
 
 # population_aged_14_to_24_rate
@@ -269,7 +324,7 @@ tmp_df <- main_df %>% mutate(population_aged_14_to_24_rate=
                                round(population_aged_14_to_24_rate/3, 0) *3)
 plt.ts.perc = plots.ts.by.group(
   tmp_df, 'total_fatalities_rate', 'population_aged_14_to_24_rate',
-  subtitle='Traffic fatalities in state colored by population 14 to 24 age rate')
+  subtitle='Traffic fatalities by state colored by pop 14 to 24 age rate')
 
 tmp_df <- main_df %>% filter(year>1980)
 plt.scatter.perc = plots.scatter.by.state(
@@ -310,34 +365,19 @@ plt.scatter.mda = plots.scatter.by.state(
 
 
 (plt.ts.perc | plt.scatter.perc) /  (plt.ts.mpc | plt.scatter.mpc) /
-  (plt.ts.ur | plt.scatter.ur) / (plt.ts.mda | plt.scatter.mda)
+  (plt.ts.ur | plt.scatter.ur) / (plt.ts.mda | plt.scatter.mda) +
+  plot_annotation(title='Time series and correlation comparison of continous variables')
 ```
+
+
+#### Description of continous variables
 
 * There is a decrease in the percentage of 14 to 24 year olds in the population over time. This is correlated to the decrease in the fatalities during that time period.
 * Miles driven per capita also has a positive relationship with fatality rate. An increase in miles driven is associated with an increase in fatality rate 
 * There is an increase in failure rate with an increase in unemployment rate. 
 * The minimum drinking age has been 21 in most states since the late 80s. There is a general decrease in fatality  rate with an increased minimum drinking age but there also has been a general decrease in fatality rates during the time period when the age limits were changed. 
 
-
-```{r, fatality rate by state EDA, fig.height=6, fig.width=12}
-cut_point <- c(-1, 12, 24, 36, 48)
-plots <- vector('list', 4)
-
-for (i in 2:5) {
-  plots[[i-1]] <- (pdata %>%
-    filter(as.integer(state) > cut_point[i-1] & as.integer(state) <= cut_point[i]) %>%
-    ggplot(aes(x = as.Date(year,"%Y"), y = total_fatalities_rate)) +
-    geom_line() +
-    facet_wrap(~ state_name, nrow = 3, ncol=4) +
-    labs(x = "Year",  y = "Total Fatalities Rate") +
-    theme(legend.position = "none"))
-}
-
-grid.arrange(plots[[1]], plots[[2]], plots[[3]], plots[[4]], nrow = 2, ncol = 2,
-             top = textGrob("Fatality rate by states", gp=gpar(fontsize=20)))
-```
-> 'For most states, fatality rates go down over the years, but some states like Alabama and Arkansas do not show many changes. Surprisingly, Mississippi has an increase in the fatality rate.'  
-
+ 
 ```{r EDA TODO}
 # traffic laws that we are exploring are seat_belt, minimum_drinking_age,
 # zero_tolerance_law, graduated_drivers_license_law, per_se_law, speed_limit, 
@@ -346,6 +386,8 @@ grid.arrange(plots[[1]], plots[[2]], plots[[3]], plots[[4]], nrow = 2, ncol = 2,
 ```
 
 # (15 points) Preliminary Model
+
+#### Status complete: TODO Check if anything is missing
 
 ```{r echo=FALSE}
 # Estimate a linear regression model of *totfatrte* on a set of dummy variables for the years 1981 through 2004 and interpret what you observe. In this section, you should address the following tasks: 
@@ -372,6 +414,7 @@ summary(pooled_ols)
 
 # (15 points) Expanded Model 
 
+#### Status complete: TODO Check if anything is missing
 ```{r echo=FALSE}
 # Expand the **Preliminary Model** by adding variables related to the following concepts: 
 # 
@@ -439,7 +482,9 @@ summary(expanded.ols)
 
 # (15 points) State-Level Fixed Effects 
 
-Re-estimate the **Expanded Model** using fixed effects at the state level. 
+#### Status complete: TODO Check if anything is missing
+
+## Re-estimate the **Expanded Model** using fixed effects at the state level. 
 
 ```{r echo=FALSE}
 # - What do you estimate for coefficients on the blood alcohol variables? How do the coefficients on the blood alcohol variables change, if at all? 
@@ -503,13 +548,42 @@ With a p-value of ```r as.numeric(res$p.value)``` less than 0.05, we reject the 
 
 # (10 points) Consider a Random Effects Model 
 
-Instead of estimating a fixed effects model, should you have estimated a random effects model?
+#### Status incomplete
 
-- Please state the assumptions of a random effects model, and evaluate whether these assumptions are met in the data. 
-- If the assumptions are, in fact, met in the data, then estimate a random effects model and interpret the coefficients of this model. Comment on how, if at all, the estimates from this model have changed compared to the fixed effects model. 
-- If the assumptions are **not** met, then do not estimate the data. But, also comment on what the consequences would be if you were to *inappropriately* estimate a random effects model. Would your coefficient estimates be biased or not? Would your standard error estimates be biased or not? Or, would there be some other problem that might arise?
+```{r echo=FALSE}
+# Instead of estimating a fixed effects model, should you have estimated a random effects model?
+# 
+# - Please state the assumptions of a random effects model, and evaluate whether these assumptions are met in the data. 
+# - If the assumptions are, in fact, met in the data, then estimate a random effects model and interpret the coefficients of this model. Comment on how, if at all, the estimates from this model have changed compared to the fixed effects model. 
+# - If the assumptions are **not** met, then do not estimate the data. But, also comment on what the consequences would be if you were to *inappropriately* estimate a random effects model. Would your coefficient estimates be biased or not? Would your standard error estimates be biased or not? Or, would there be some other problem that might arise?
+```
+
+### Estimating teh random effect model
+```{r random model}
+expanded.re <- plm(total_fatalities_rate ~  bac + year  +
+                      population_aged_14_to_24_rate + miles_driven_per_capita + 
+                      unemployment_rate + speed_limit_70_plus + per_se_law + 
+                      seat_belt_law + graduated_drivers_license_law,
+                    data = main_p,
+                  index = c("state", "year"),
+                  model = "random")
+
+summary(expanded.re)
+```
+### We conduct a Hausman test for random vs. fixed effects using phtest. 
+
+We perform this test with an $\alpha = 0.05$
+
+```{r}
+res <- phtest(expanded.within, expanded.re)
+```
+With a p-value of `r res$p.value` much less than $\alpha$, we reject the null hypothesis that random effects are appropriate, suggesting that we should use the fixed models. The random effects model is not likely to be consistent in this case.
+
+> TODO: Comment about consequences
 
 # (10 points) Model Forecasts 
+
+#### Status not-started
 
 The COVID-19 pandemic dramatically changed patterns of driving. Find data (and include this data in your analysis, here) that includes some measure of vehicle miles driven in the US. Your data should at least cover the period from January 2018 to as current as possible. With this data, produce the following statements: 
 
@@ -529,15 +603,10 @@ If there were serial correlation or heteroskedasticity in the idiosyncratic erro
 
 ### Analysis of residuals
 
-<!-- As we have used an OLS regression for a time series, we expect the residuals to be correlated. We perform a Ljung-Box test to check this. The Null hypothesis is that the series is not autocorrelated and the alternate hypothesis is that the series is autocorrelated. We test with an of $\alpha=0.05$. -->
-<!-- ```{r} -->
-<!-- expanded.ols %>% residuals() %>% Box.test(type='Ljung-Box') -> lb.res -->
-<!-- ``` -->
-<!-- With a p value of `r lb.res$p.value` less than $\alpha$, we reject the Null hypothesis that the series is not auto-correlated. As the residuals are autocorrelated, the standard error of the parameters cannot be trusted. We review the model parameters with this in mind. -->
+#### Status incomplete
 
 We test the residuals for serial correlation. The Null hypothesis for the test is that the residuals are not serially correlated and the alternate hypothesis is that the residuals are serially correlated. We check against an $\alpha$ of 0.05. 
 ```{r}
-
 # 
 res <- pdwtest(expanded.within)
 ```
