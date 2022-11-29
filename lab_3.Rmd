@@ -114,7 +114,7 @@ head(main_df)
 ```{r echo=FALSE}
 # What is this data? How, where, and when is it collected? Is the data generated through a survey or some other method? Is the data that is presented a sample from the population, or is it a *census* that represents the entire population?
 # Minimally, this should include:
-#     - How is the our dependent variable of interest `total_fatalities_rate` defined? 
+#   - How is the our dependent variable of interest `total_fatalities_rate` defined? 
 ```
 
 #### Status not-started
@@ -622,10 +622,10 @@ Hetroskedasticity test
 pcdtest(expanded.within, test = "lm")
 ```
 
-```{r}
-within.model.se <-sqrt(diag(vcovHC(expanded.within, method="arellano", type="HC0")))
-
-stargazer(expanded.within, se=c(within.model.se), style="qje", type="text", 
-          omit.stat=c("adj.rsq","f"), 
-          column.labels = c( "Within"))
+```{r echo=FALSE}
+# within.model.se <-sqrt(diag(vcovHC(expanded.within, method="arellano", type="HC0")))
+# 
+# stargazer(expanded.within, se=c(within.model.se), style="qje", type="text", 
+#           omit.stat=c("adj.rsq","f"), 
+#           column.labels = c( "Within"))
 ```
