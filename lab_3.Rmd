@@ -558,7 +558,11 @@ With a p-value of ```r as.numeric(res$p.value)``` less than 0.05, we reject the 
 # - If the assumptions are **not** met, then do not estimate the data. But, also comment on what the consequences would be if you were to *inappropriately* estimate a random effects model. Would your coefficient estimates be biased or not? Would your standard error estimates be biased or not? Or, would there be some other problem that might arise?
 ```
 
-### Estimating teh random effect model
+### Random effect model assumptions
+
+Assumption for a random effects model is $cov(x_{it}, a_i) =0$, i.e. the fixed effect is uncorrelated to the independent variables at any time period.
+
+### Estimating the random effect model
 ```{r random model}
 expanded.re <- plm(total_fatalities_rate ~  bac + year  +
                       population_aged_14_to_24_rate + miles_driven_per_capita + 
