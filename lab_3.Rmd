@@ -9,12 +9,15 @@ output:
 ---
 
 ```{r load packages, echo=FALSE, message=FALSE}
+if(!"plm"%in%rownames(installed.packages())) {install.packages("plm")}
 
 library(plm)
 library(grid)
+library(readr)
 library(ggrepel)
 library(gridExtra)
 library(tidyverse)
+library(lubridate)
 library(patchwork)
 library(stargazer)
 ```
@@ -609,6 +612,56 @@ Now, use these changes in driving to make forecasts from your models.
 
 - Suppose that the number of miles driven per capita, increased by as much as the COVID boom. Using the FE estimates, what would the consequences be on the number of traffic fatalities? Please interpret the estimate.
 - Suppose that the number of miles driven per capita, decreased by as much as the COVID bust. Using the FE estimates, what would the consequences be on the number of traffic fatalities? Please interpret the estimate.
+
+```{r comparing monthly miles driven}
+# Source
+# U.S. Federal Highway Administration, Vehicle Miles Traveled [TRFVOLUSM227NFWA],
+#   retrieved from FRED, Federal Reserve Bank of St. Louis;
+# https://fred.stlouisfed.org/series/TRFVOLUSM227NFWA, November 29, 2022.
+
+miles.driven <- 
+  readr::read_csv("./data/TRFVOLUSM227NFWA.csv", show_col_types = FALSE) %>%
+  rename(miles = TRFVOLUSM227NFWA, date = DATE)
+
+largest.decrease <- 0
+largest.increase <- 0
+max <- -Inf
+min <- Inf
+
+# Comparing each month miles driven
+for (i in 1:12) {
+  val.18 <- miles.driven %>%
+    filter(date == mdy(paste(i, 1, 2018, sep="/")))
+  
+  # Comparing 2018 with 2020 and 2021
+  for (j in 2020:2021) {
+    val.covid <- miles.driven %>%
+      filter(date == mdy(paste(i, 1, j, sep="/")))
+
+    diff <- val.covid$miles - val.18$miles
+    if(diff < min) {
+      largest.decrease <- mdy(paste(i, 1, j, sep="/"))
+      min = diff
+    }
+    if(diff > max) {
+      largest.increase <- mdy(paste(i, 1, j, sep="/"))
+      max = diff
+    }
+  }
+}
+
+# Calculating percentage
+prev <- miles.driven %>%
+    filter(date == largest.decrease)
+lower.percentage  <- min/prev$miles
+
+prev <- miles.driven %>%
+    filter(date == largest.increase)
+higher.percentage <- max/prev$miles
+```
+
+> 'The largest decrease in driving was on `r format(as.Date(largest.decrease), "%B %Y")` and it was lower by `r round(lower.percentage * 100, 2) `% amount.'  
+> 'The largest increase in driving was on `r format(as.Date(largest.increase), "%B %Y")` and it was higher by `r round(higher.percentage * 100, 2) `% amount.'  
 
 # (5 points) Evaluate Error 
 
