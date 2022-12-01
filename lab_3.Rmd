@@ -1,6 +1,7 @@
----
+git ---
 title: 'Lab 3: Panel Models'
 subtitle: 'US Traffic Fatalities: 1980 - 2004'
+author: 'Nathan Martinez, Haile Bizunehe, Hannah George, and Meera Sharma'
 output:
     pdf_document: 
       toc: true
@@ -9,7 +10,9 @@ output:
 ---
 
 ```{r load packages, echo=FALSE, message=FALSE}
-if(!"plm"%in%rownames(installed.packages())) {install.packages("plm")}
+list.of.packages <- c("plm", "grid", "ggrepel", "gridExtra", "tidyverse", "readr", "lubridate", "patchwork", "stargazer")
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages)) install.packages(new.packages)
 
 library(plm)
 library(grid)
@@ -24,8 +27,10 @@ library(stargazer)
 
 
 \newpage
+
 # U.S. traffic fatalities: 1980-2004
 
+<!--
 In this lab, we are asking you to answer the following **causal** question: 
 
 > **"Do changes in traffic laws affect traffic fatalities?"**  
@@ -33,28 +38,30 @@ In this lab, we are asking you to answer the following **causal** question:
 To answer this question, please complete the tasks specified below using the data provided in `data/driving.Rdata`. This data includes 25 years of data that cover changes in various state drunk driving, seat belt, and speed limit laws. 
 
 Specifically, this data set contains data for the 48 continental U.S. states from 1980 through 2004. Various driving laws are indicated in the data set, such as the alcohol level at which drivers are considered legally intoxicated. There are also indicators for “per se” laws—where licenses can be revoked without a trial—and seat belt laws. A few economics and demographic variables are also included. The description of the each of the variables in the dataset is also provided in the dataset. 
+-->
 
 ```{r load data, echo = TRUE}
 load(file="./data/driving.RData")
+```
 
-## please comment these calls in your work 
-#glimpse(data)
-#desc
+```{r}
+data
 ```
 
 
 # (30 points, total) Build and Describe the Data 
 
-## (5 points) Load the data and produce useful features. 
-
-```{r echo=FALSE}
-#     - Produce a new variable, called `speed_limit` that re-encodes the data that is in `sl55`, `sl65`, `sl70`, `sl75`, and `slnone`; 
-#     - Produce a new variable, called `year_of_observation` that re-encodes the data that is in `d80`, `d81`, ... , `d04`. 
-#     - Produce a new variable for each of the other variables that are one-hot encoded (i.e. `bac*` variable series). 
-#     - Rename these variables to sensible names that are legible to a reader of your analysis. For example, the dependent variable as provided is called, `totfatrte`. Pick something more sensible, like, `total_fatalities_rate`. There are few enough of these
-```
+## (5 points) Load the data and produce useful features.
 
 #### Status complete: TODO Check for completeness
+
+<!---
+1. (5 points) Load the data and produce useful features. Specifically: 
+    - Produce a new variable, called `speed_limit` that re-encodes the data that is in `sl55`, `sl65`, `sl70`, `sl75`, and `slnone`; 
+    - Produce a new variable, called `year_of_observation` that re-encodes the data that is in `d80`, `d81`, ... , `d04`. 
+    - Produce a new variable for each of the other variables that are one-hot encoded (i.e. `bac*` variable series). 
+    - Rename these variables to sensible names that are legible to a reader of your analysis. For example, the dependent variable as provided is called, `totfatrte`. Pick something more sensible, like, `total_fatalities_rate`. There are few enough of these variables to change, that you should change them for all the variables in the data. (You will thank yourself later.)
+-->
 
 ```{r reencode}
 # For the fractions, we are taking the majority as a speed limit
@@ -64,15 +71,14 @@ df <- data %>%
                        ifelse(sl65 >= 0.5, '65',
                        ifelse(sl70 >= 0.5, '70',
                        ifelse(sl75 >= 0.5, '75',
-                       ifelse(slnone >= 0.5, 'none', '0')
-                       ))))) %>%
-           mutate(speed_limit=factor(speed_limit, 
-                  levels=c('55', '65', '70', '75', 'none')),
+                       ifelse(slnone >= 0.5, 'none', '0')))))) %>%
+  mutate(speed_limit = factor(speed_limit,
+                              levels = c('55', '65', '70', '75', 'none')),
          blood_alcohol_limit_10 = ifelse(bac10 >= 0.5, 1, 0),
          blood_alcohol_limit_08 = ifelse(bac08 >= 0.5, 1, 0)) %>% 
-  mutate(bac=ifelse(blood_alcohol_limit_10==1, '10', 
-             ifelse(blood_alcohol_limit_08==1, '8', 'none'))) %>%
-  mutate(bac=factor(bac, levels=c('none', '10', '8'))) %>%
+  mutate(bac = ifelse(blood_alcohol_limit_10 == 1, '10', 
+               ifelse(blood_alcohol_limit_08 == 1, '8', 'none'))) %>%
+  mutate(bac = factor(bac, levels=c('none', '10', '8'))) %>%
   select(!c((sl55:slnone), (d80:d04), bac10, bac08)) %>% # Excluding
   rename(minimum_drinking_age = minage, zero_tolerance_law = zerotol,
          graduated_drivers_license_law = gdl, per_se_law = perse,
@@ -89,18 +95,14 @@ df <- data %>%
          seat_belt = seatbelt,
          primary_seatbelt_law = sbprim, secondary_seatbelt_law = sbsecon,
          miles_driven_per_capita = vehicmilespc) %>%
-  mutate(speed_limit_70_plus = 
-           ifelse(speed_limit_70_plus>0.5, 1, 0)
-           ) %>%
-  mutate(seat_belt_law = 
-           ifelse(seat_belt==0, 'none',
-           ifelse(seat_belt==2, 'secondary', 
-           ifelse(seat_belt==1, 'primary', 'na')))) %>%
-  mutate(seat_belt_law=factor(seat_belt_law, 
-                              levels=c('none', 'secondary', 'primary')),
-         ) %>%
-  mutate(per_se_law=round(per_se_law, 0)) %>%
-  mutate(per_se_law=factor(per_se_law, levels=c(0, 1)))
+  mutate(speed_limit_70_plus = ifelse(speed_limit_70_plus>0.5, 1, 0)) %>%
+  mutate(seat_belt_law = ifelse(seat_belt==0, 'none',
+                         ifelse(seat_belt==2, 'secondary', 
+                         ifelse(seat_belt==1, 'primary', 'na')))) %>%
+  mutate(seat_belt_law = factor(seat_belt_law,
+                                levels=c('none', 'secondary', 'primary'))) %>%
+  mutate(per_se_law = round(per_se_law, 0)) %>%
+  mutate(per_se_law = factor(per_se_law, levels=c(0, 1)))
   
 
 # Adding states to the dataframe
@@ -114,29 +116,27 @@ head(main_df)
 
 ## (5 points) Provide a description of the basic structure of the dataset. 
 
-```{r echo=FALSE}
-# What is this data? How, where, and when is it collected? Is the data generated through a survey or some other method? Is the data that is presented a sample from the population, or is it a *census* that represents the entire population?
-# Minimally, this should include:
-#   - How is the our dependent variable of interest `total_fatalities_rate` defined? 
-```
-
 #### Status not-started
 
+<!--
+2. (5 points) Provide a description of the basic structure of the dataset. What is this data? How, where, and when is it collected? Is the data generated through a survey or some other method? Is the data that is presented a sample from the population, or is it a *census* that represents the entire population? Minimally, this should include:
+    - How is the our dependent variable of interest `total_fatalities_rate` defined? 
+-->
+
 > TODO
 > TODO
 
-##  (20 points) Conduct a very thorough EDA
-
-```{r echo=FALSE}
-# which should include both graphical and tabular techniques, on the dataset, including both the dependent variable `total_fatalities_rate` and the potential explanatory variables
-# Minimally,
-#     - How is the our dependent variable of interest `total_fatalities_rate` defined? 
-#     - What is the average of `total_fatalities_rate` in each of the years in the time period covered in this dataset? 
-# 
-# As with every EDA this semester, the goal of this EDA is not to document your own process of discovery -- save that for an exploration notebook -- but instead it is to bring a reader that is new to the data to a full understanding of the important features of your data as quickly as possible. In order to do this, your EDA should include a detailed, orderly narrative description of what you want your reader to know. Do not include any output -- tables, plots, or statistics -- that you do not intend to write about.
-```
+##  (20 points) EDA
 
 #### Status Complete: Check for completeness
+
+<!--
+3. (20 points) Conduct a very thorough EDA, which should include both graphical and tabular techniques, on the dataset, including both the dependent variable `total_fatalities_rate` and the potential explanatory variables. Minimally, this should include: 
+    - How is the our dependent variable of interest `total_fatalities_rate` defined? 
+    - What is the average of `total_fatalities_rate` in each of the years in the time period covered in this dataset? 
+
+As with every EDA this semester, the goal of this EDA is not to document your own process of discovery -- save that for an exploration notebook -- but instead it is to bring a reader that is new to the data to a full understanding of the important features of your data as quickly as possible. In order to do this, your EDA should include a detailed, orderly narrative description of what you want your reader to know. Do not include any output -- tables, plots, or statistics -- that you do not intend to write about.
+-->
 
 > TODO
 > TODO
@@ -196,7 +196,6 @@ plt <- df %>%
 
 #### Status Incomplete: Refer to graphs and add descriptive text. Does the dependent variable require a transformation?
 
-\newpage
 ```{r overall mean EDA, echo=FALSE}
 # Average mean for total_fatalities_rate over years
 main_plt <- main_df %>%
@@ -232,9 +231,6 @@ grid.arrange(plots[[1]], plots[[2]], plots[[3]], plots[[4]], nrow = 2, ncol = 2,
 ```
 
 > 'For most states, fatality rates go down over the years, but some states like Alabama and Arkansas do not show many changes. Surprisingly, Mississippi has an increase in the fatality rate.' 
-
-
-\newpage
 
 ```{r, fig.width=8, fig.height=11, echo=FALSE}
 
@@ -392,16 +388,16 @@ plt.scatter.mda = plots.scatter.by.state(
 
 #### Status complete: TODO Check if anything is missing
 
-```{r echo=FALSE}
-# Estimate a linear regression model of *totfatrte* on a set of dummy variables for the years 1981 through 2004 and interpret what you observe. In this section, you should address the following tasks: 
-# 
-# - Why is fitting a linear model a sensible starting place? 
-# - What does this model explain, and what do you find in this model? 
-# - Did driving become safer over this period? Please provide a detailed explanation.
-# - What, if any, are the limitation of this model. In answering this, please consider **at least**: 
-#     - Are the parameter estimates reliable, unbiased estimates of the truth? Or, are they biased due to the way that the data is structured?
-#     - Are the uncertainty estimate reliable, unbiased estimates of sampling based variability? Or, are they biased due to the way that the data is structured? 
-```
+<!--
+Estimate a linear regression model of *totfatrte* on a set of dummy variables for the years 1981 through 2004 and interpret what you observe. In this section, you should address the following tasks: 
+
+- Why is fitting a linear model a sensible starting place? 
+- What does this model explain, and what do you find in this model? 
+- Did driving become safer over this period? Please provide a detailed explanation.
+- What, if any, are the limitation of this model. In answering this, please consider **at least**: 
+    - Are the parameter estimates reliable, unbiased estimates of the truth? Or, are they biased due to the way that the data is structured?
+    - Are the uncertainty estimate reliable, unbiased estimates of sampling based variability? Or, are they biased due to the way that the data is structured? 
+-->
 
 ```{r}
 #  Pooled OLS model
@@ -418,28 +414,28 @@ summary(pooled_ols)
 # (15 points) Expanded Model 
 
 #### Status complete: TODO Check if anything is missing
-```{r echo=FALSE}
-# Expand the **Preliminary Model** by adding variables related to the following concepts: 
-# 
-# - Blood alcohol levels 
-# - Per se laws
-# - Primary seat belt laws (Note that if a law was enacted sometime within a year the fraction of the year is recorded in place of the zero-one indicator.)
-# - Secondary seat belt laws 
-# - Speed limits faster than 70 
-# - Graduated drivers licenses 
-# - Percent of the population between 14 and 24 years old
-# - Unemployment rate
-# - Vehicle miles driven per capita. 
-# 
-# If it is appropriate, include transformations of these variables. Please carefully explain carefully your rationale, which should be based on your EDA, behind any transformation you made. If no transformation is made, explain why transformation is not needed. 
-# 
-# - How are the blood alcohol variables defined? Interpret the coefficients that you estimate for this concept. 
-# - Do *per se laws* have a negative effect on the fatality rate? 
-# - Does having a primary seat belt law? 
-#   
-```
 
-## Transformation(treatment) of variables
+<!--
+Expand the **Preliminary Model** by adding variables related to the following concepts: 
+
+- Blood alcohol levels 
+- Per se laws
+- Primary seat belt laws (Note that if a law was enacted sometime within a year the fraction of the year is recorded in place of the zero-one indicator.)
+- Secondary seat belt laws 
+- Speed limits faster than 70 
+- Graduated drivers licenses 
+- Percent of the population between 14 and 24 years old
+- Unemployment rate
+- Vehicle miles driven per capita. 
+
+If it is appropriate, include transformations of these variables. Please carefully explain carefully your rationale, which should be based on your EDA, behind any transformation you made. If no transformation is made, explain why transformation is not needed. 
+
+- How are the blood alcohol variables defined? Interpret the coefficients that you estimate for this concept. 
+- Do *per se laws* have a negative effect on the fatality rate? 
+- Does having a primary seat belt law? 
+-->
+
+## Transformation (treatment) of Variables
 
 * States where highway speeds were made over 70mph during the middle of the year contained a fractional value for that year. The fraction was threshold at 0.5 to make this a binary variable. As there is no meaningful interpretation for this variable as a continuous value, this threshold was necessary to convert it into a factor.
 * A state can have a primary, secondary or no seat belt laws. The seat_belt_law reflects these three factors combined into one variable. 
@@ -447,15 +443,14 @@ summary(pooled_ols)
 * Although Blood alcohol content (BAC) levels of 8PPM or 10PPM lends itself to a numeric interpretation, there is no numeric value associated with no BAC limit. For this reason BAC has been treated as a factor variable with levels none, 10 and 8. 
 * None of the continuous variables, namely, unemployment rate, miles drive per-capita, rate of 14 to 24 aged people in population required any transformation. This can be seen in the correlation plots in Figure y.
 
-### Pooled OLS model creation
+### Pooled OLS Model Creation
 
 ```{r expanded model}
-expanded.ols.data <- main_df %>% select(c(total_fatalities_rate, bac, per_se_law, 
-                   seat_belt_law, graduated_drivers_license_law,
-                   population_aged_14_to_24_rate, minimum_drinking_age,
-                   unemployment_rate, speed_limit_70_plus, 
-                   miles_driven_per_capita, year, state
-                   )) 
+expanded.ols.data <- main_df %>% select(
+  c(total_fatalities_rate, bac, per_se_law, seat_belt_law, 
+    graduated_drivers_license_law, population_aged_14_to_24_rate,
+    minimum_drinking_age, unemployment_rate, speed_limit_70_plus, 
+    miles_driven_per_capita, year, state)) 
 
 main_p <- pdata.frame(expanded.ols.data, index=c("state", "year"))
 expanded.ols <- plm(total_fatalities_rate ~  year + bac + 
@@ -469,19 +464,19 @@ expanded.ols <- plm(total_fatalities_rate ~  year + bac +
 summary(expanded.ols)
 ```
 
-## Interpretation of results 
+## Interpretation of Results 
 
 ###  How are the blood alcohol variables defined? Interpret the coefficients that you estimate for this concept. 
 
-* In an earlier section we have defined our treatment of the BAC variable as a factir with levels none, 10 and 8. In this model we note that the base level is no blood alcohol limit. We also note that bac value of 0.1% and 0.08% are both statistically significant parameters. The model suggests that setting a blood alcohol limit of 0.1% is associated with a ```r abs(round(coef(expanded.ols)['bac10'], 2))``` unit decrease in fatality rate as compared to no BAC limit.  The model suggests that a setting a blood alcohol limit of 0.08% is associated with a ```r abs(round(coef(expanded.ols)['bac8'], 2))``` unit decrease in fatality rate as compared to no BAC limit.
+* In an earlier section we have defined our treatment of the BAC variable as a factir with levels none, 10 and 8. In this model we note that the base level is no blood alcohol limit. We also note that bac value of 0.1% and 0.08% are both statistically significant parameters. The model suggests that setting a blood alcohol limit of 0.1% is associated with a `r abs(round(coef(expanded.ols)['bac10'], 2))` unit decrease in fatality rate as compared to no BAC limit.  The model suggests that a setting a blood alcohol limit of 0.08% is associated with a `r abs(round(coef(expanded.ols)['bac8'], 2))` unit decrease in fatality rate as compared to no BAC limit.
     
 ### Do *per se laws* have a negative effect on the fatality rate? 
 
-* We note that per-se law is a statistically significant parameter. The model suggests that havng a per-se law is associated with a ```r abs(round(coef(expanded.ols)['per_se_law1'], 2))``` unit decrease in fatality rate as compared to not having per-se law.
+* We note that per-se law is a statistically significant parameter. The model suggests that having a per-se law is associated with a `r abs(round(coef(expanded.ols)['per_se_law1'], 2))` unit decrease in fatality rate as compared to not having per-se law.
 
 ### Does having a primary seat belt law reduce fatality rates?
 
-* We note that the seat belt law factors are not statistically significant. We also note that the coefficient of  ```r abs(round(coef(expanded.ols)['seat_belt_lawprimary'], 2))``` is practically small. 
+* We note that the seat belt law factors are not statistically significant. We also note that the coefficient of  `r abs(round(coef(expanded.ols)['seat_belt_lawprimary'], 2))` is practically small. 
 
 # (15 points) State-Level Fixed Effects 
 
@@ -489,18 +484,20 @@ summary(expanded.ols)
 
 ## Re-estimate the **Expanded Model** using fixed effects at the state level. 
 
-```{r echo=FALSE}
-# - What do you estimate for coefficients on the blood alcohol variables? How do the coefficients on the blood alcohol variables change, if at all? 
-# - What do you estimate for coefficients on per se laws? How do the coefficients on per se laws change, if at all? 
-# - What do you estimate for coefficients on primary seat-belt laws? How do the coefficients on primary seatbelt laws change, if at all? 
-# 
-# Which set of estimates do you think is more reliable? Why do you think this? 
-# 
-# - What assumptions are needed in each of these models?  
-# - Are these assumptions reasonable in the current context?
-```
+<!--
+Re-estimate the **Expanded Model** using fixed effects at the state level. 
 
-Model estimation for a fixed effect(within) model.
+- What do you estimate for coefficients on the blood alcohol variables? How do the coefficients on the blood alcohol variables change, if at all? 
+- What do you estimate for coefficients on per se laws? How do the coefficients on per se laws change, if at all? 
+- What do you estimate for coefficients on primary seat-belt laws? How do the coefficients on primary seatbelt laws change, if at all? 
+
+Which set of estimates do you think is more reliable? Why do you think this? 
+
+- What assumptions are needed in each of these models?  
+- Are these assumptions reasonable in the current context?
+-->
+
+Model estimation for a fixed effect (within) model.
 
 ```{r within model}
 expanded.within <- plm(total_fatalities_rate ~  bac + year  +
@@ -514,58 +511,59 @@ expanded.within <- plm(total_fatalities_rate ~  bac + year  +
 summary(expanded.within)
 ```
 
-## Interpretation of model
+## Interpretation of the Model
 
-```{r, echo=FALSE, warning=FALSE}
+```{r, echo=FALSE, warning=FALSE, results = 'asis',}
 stargazer(expanded.ols, expanded.within,
           keep=c("bac10", "bac8", "per_se_law1", "seat_belt_lawprimary"),
-          style="qje", type="text",
-          omit.stat=c("adj.rsq","f"), 
+          style="qje", omit.stat=c("adj.rsq","f"), 
           column.labels = c( "Pooled OLS", "Within"))
 ```
 
 
 ### What do you estimate for coefficients on the blood alcohol variables? How do the coefficients on the blood alcohol variables change, if at all? 
 
-We also note that bac value of 0.1% and 0.08% are both statistically significant parameters. 
+We also note that BAC value of 0.1% and 0.08% are both statistically significant parameters. 
 
-  * This model suggests that setting a blood alcohol limit of 0.1% is associated with a ```r abs(round(coef(expanded.within)['bac10'], 2))``` unit decrease in fatality rate as compared to no BAC limit. Compared to the OLS model which showed that setting a blood alcohol limit of 0.1% is associated with a ```r abs(round(coef(expanded.ols)['bac10'], 2))``` unit decrease in fatality rate as compared to no BAC limit. 
-  * This model suggests that a setting a blood alcohol limit of 0.08% is associated with a ```r abs(round(coef(expanded.within)['bac8'], 2))``` unit decrease in fatality rate as compared to no BAC limit. Compared to the OLS model which showed that setting a blood alcohol limit of 0.08% is associated with a ```r abs(round(coef(expanded.within)['bac8'], 2))``` unit decrease in fatality rate as compared to no BAC limit.
+  * This model suggests that setting a blood alcohol limit of 0.1% is associated with a `r abs(round(coef(expanded.within)['bac10'], 2))` unit decrease in fatality rate as compared to no BAC limit. Compared to the OLS model which showed that setting a blood alcohol limit of 0.1% is associated with a `r abs(round(coef(expanded.ols)['bac10'], 2))` unit decrease in fatality rate as compared to no BAC limit. 
+  * This model suggests that a setting a blood alcohol limit of 0.08% is associated with a `r abs(round(coef(expanded.within)['bac8'], 2))` unit decrease in fatality rate as compared to no BAC limit. Compared to the OLS model which showed that setting a blood alcohol limit of 0.08% is associated with a `r abs(round(coef(expanded.within)['bac8'], 2))` unit decrease in fatality rate as compared to no BAC limit.
 
 ### What do you estimate for coefficients on per se laws? How do the coefficients on per se laws change, if at all? 
 
-We note that per-se law is a statistically significant parameter. This model suggests that having a per-se law is associated with a ```r abs(round(coef(expanded.within)['per_se_law1'], 2))``` unit decrease in fatality rate as compared to not having per-se law. Compared to the OLS model which showed that havng a per-se law is associated with a ```r abs(round(coef(expanded.ols)['per_se_law1'], 2))``` unit decrease in fatality rate as compared to not having per-se law
+We note that per-se law is a statistically significant parameter. This model suggests that having a per-se law is associated with a `r abs(round(coef(expanded.within)['per_se_law1'], 2))` unit decrease in fatality rate as compared to not having per-se law. Compared to the OLS model which showed that having a per-se law is associated with a `r abs(round(coef(expanded.ols)['per_se_law1'], 2))` unit decrease in fatality rate as compared to not having per-se law
 
 ### What do you estimate for coefficients on primary seat-belt laws? How do the coefficients on primary seatbelt laws change, if at all?
 
-In this model we note that seat belt primary law is a significant factor. This model suggests that having a primary seat belt law is associated with a ```r abs(round(coef(expanded.within)['seat_belt_lawprimary'], 2))``` unit decrease in fatality rate as compared to not having  primary seat belt law. Compared to the OLS model for which the parameter was not statisticalyl signifcant and had a close to 0 value of ```r abs(round(coef(expanded.ols)['seat_belt_lawprimary'], 2))```
+In this model we note that seat belt primary law is a significant factor. This model suggests that having a primary seat belt law is associated with a `r abs(round(coef(expanded.within)['seat_belt_lawprimary'], 2))` unit decrease in fatality rate as compared to not having  primary seat belt law. Compared to the OLS model for which the parameter was not statistically significant and had a near-zero value of `r abs(round(coef(expanded.ols)['seat_belt_lawprimary'], 2))`
 
-## Model assumptions
+## Model Assumptions
 
-A fundamental assumption in an pooled OLS model is that the data is IID. Let's consider a dataset where a sample of a large population was collected on different years. It is unlikely that a particular individual sample is measured twice. In such a circumstance a pooled OLS model would be applicable. However in this dataset, the individual is the state and the same state is measured multiple times across years. This violates the assumption of IID in the pooled OLS. A fixed effect model is then expected to be a better model in this scenario. We perform a F-test between the pooled and the fixed effect model to check for fixed effects. The Null hypothesis is that there are no fixed effects and the alternate hypothesis is that there are fixed effects. We test against an alpha of 0.05
+A fundamental assumption in an pooled OLS model is that the data is IID. Let's consider a data set where a sample of a large population was collected on different years. It is unlikely that a particular individual sample is measured twice. In such a circumstance a pooled OLS model would be applicable. However in this data set, the individual is the state and the same state is measured multiple times across years. This violates the assumption of IID in the pooled OLS. A fixed effect model is then expected to be a better model in this scenario. We perform a F-test between the pooled and the fixed effect model to check for fixed effects. The null hypothesis is that there are no fixed effects and the alternate hypothesis is that there are fixed effects. We test against an alpha of 0.05
 
 ```{r}
 res <- pFtest(expanded.within, expanded.ols)
 ```
-With a p-value of ```r as.numeric(res$p.value)``` less than 0.05, we reject the null hypothesis of no fixed effects. This means we should include state and/or time fixed effects in our model. Hence the fixed effect model is better for this scenario.
+
+With a p-value of `r as.numeric(res$p.value)` less than 0.05, we reject the null hypothesis of no fixed effects. This means we should include state and/or time fixed effects in our model. Hence the fixed effect model is better for this scenario.
 
 # (10 points) Consider a Random Effects Model 
 
 #### Status incomplete
 
-```{r echo=FALSE}
-# Instead of estimating a fixed effects model, should you have estimated a random effects model?
-# 
-# - Please state the assumptions of a random effects model, and evaluate whether these assumptions are met in the data. 
-# - If the assumptions are, in fact, met in the data, then estimate a random effects model and interpret the coefficients of this model. Comment on how, if at all, the estimates from this model have changed compared to the fixed effects model. 
-# - If the assumptions are **not** met, then do not estimate the data. But, also comment on what the consequences would be if you were to *inappropriately* estimate a random effects model. Would your coefficient estimates be biased or not? Would your standard error estimates be biased or not? Or, would there be some other problem that might arise?
-```
+<!--
+Instead of estimating a fixed effects model, should you have estimated a random effects model?
 
-### Random effect model assumptions
+- Please state the assumptions of a random effects model, and evaluate whether these assumptions are met in the data. 
+- If the assumptions are, in fact, met in the data, then estimate a random effects model and interpret the coefficients of this model. Comment on how, if at all, the estimates from this model have changed compared to the fixed effects model. 
+- If the assumptions are **not** met, then do not estimate the data. But, also comment on what the consequences would be if you were to *inappropriately* estimate a random effects model. Would your coefficient estimates be biased or not? Would your standard error estimates be biased or not? Or, would there be some other problem that might arise?
+-->
+
+## Random Effect Model Assumptions
 
 Assumption for a random effects model is $cov(x_{it}, a_i) =0$, i.e. the fixed effect is uncorrelated to the independent variables at any time period.
 
-### Estimating the random effect model
+## Estimating the Random Effect Model
+
 ```{r random model}
 expanded.re <- plm(total_fatalities_rate ~  bac + year  +
                       population_aged_14_to_24_rate + miles_driven_per_capita + 
@@ -577,13 +575,13 @@ expanded.re <- plm(total_fatalities_rate ~  bac + year  +
 
 summary(expanded.re)
 ```
-### We conduct a Hausman test for random vs. fixed effects using phtest. 
 
-We perform this test with an $\alpha = 0.05$
+We conduct a Hausman test for random vs. fixed effects using `phtest`. We perform this test with an $\alpha = 0.05$
 
 ```{r}
 res <- phtest(expanded.within, expanded.re)
 ```
+
 With a p-value of `r res$p.value` much less than $\alpha$, we reject the null hypothesis that random effects are appropriate, suggesting that we should use the fixed models. The random effects model is not likely to be consistent in this case.
 
 > TODO: Comment about consequences
@@ -592,6 +590,7 @@ With a p-value of `r res$p.value` much less than $\alpha$, we reject the null hy
 
 #### Status not-started
 
+<!--
 The COVID-19 pandemic dramatically changed patterns of driving. Find data (and include this data in your analysis, here) that includes some measure of vehicle miles driven in the US. Your data should at least cover the period from January 2018 to as current as possible. With this data, produce the following statements: 
 
 - Comparing monthly miles driven in 2018 to the same months during the pandemic: 
@@ -602,6 +601,7 @@ Now, use these changes in driving to make forecasts from your models.
 
 - Suppose that the number of miles driven per capita, increased by as much as the COVID boom. Using the FE estimates, what would the consequences be on the number of traffic fatalities? Please interpret the estimate.
 - Suppose that the number of miles driven per capita, decreased by as much as the COVID bust. Using the FE estimates, what would the consequences be on the number of traffic fatalities? Please interpret the estimate.
+-->
 
 ```{r comparing monthly miles driven}
 # Source
@@ -649,26 +649,28 @@ prev <- miles.driven %>%
 higher.percentage <- max/prev$miles
 ```
 
-> 'The largest decrease in driving was on `r format(as.Date(largest.decrease), "%B %Y")` and it was lower by `r round(lower.percentage * 100, 2) `% amount.'  
-> 'The largest increase in driving was on `r format(as.Date(largest.increase), "%B %Y")` and it was higher by `r round(higher.percentage * 100, 2) `% amount.'  
+> 'The largest decrease in driving was on `r format(as.Date(largest.decrease), "%B %Y")` and it was lower by `r round(lower.percentage * 100, 2)`% amount.'  
+> 'The largest increase in driving was on `r format(as.Date(largest.increase), "%B %Y")` and it was higher by `r round(higher.percentage * 100, 2)`% amount.'  
 
-# (5 points) Evaluate Error 
-
-If there were serial correlation or heteroskedasticity in the idiosyncratic errors of the model, what would be the consequences on the estimators and their standard errors? Is there any serial correlation or heteroskedasticity? 
-
-
-### Analysis of residuals
+# (5 points) Evaluate Error
 
 #### Status incomplete
 
-We test the residuals for serial correlation. The Null hypothesis for the test is that the residuals are not serially correlated and the alternate hypothesis is that the residuals are serially correlated. We check against an $\alpha$ of 0.05. 
+<!--
+If there were serial correlation or heteroskedasticity in the idiosyncratic errors of the model, what would be the consequences on the estimators and their standard errors? Is there any serial correlation or heteroskedasticity? 
+-->
+
+## Analysis of Residuals
+
+We test the residuals for serial correlation. The Null hypothesis for the test is that the residuals are not serially correlated and the alternate hypothesis is that the residuals are serially correlated. We check against an $\alpha$ of 0.05.
+
 ```{r}
-# 
 res <- pdwtest(expanded.within)
 ```
-With a p-value of ```r as.numeric(res$p.value)``` less than 0.05, we reject the null hypothesis of no serial correlation. This suggests that we must use robust standard errors for model parameters
 
-Hetroskedasticity test
+With a p-value of `r as.numeric(res$p.value)`, which is less than 0.05, we reject the null hypothesis of no serial correlation. This suggests that we must use robust standard errors for model parameters
+
+## Hetroskedasticity Test
 
 ```{r}
 pcdtest(expanded.within, test = "lm")
