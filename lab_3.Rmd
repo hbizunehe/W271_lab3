@@ -44,11 +44,6 @@ Specifically, this data set contains data for the 48 continental U.S. states fro
 load(file="./data/driving.RData")
 ```
 
-```{r}
-data
-```
-
-
 # (30 points, total) Build and Describe the Data 
 
 ## (5 points) Load the data and produce useful features.
