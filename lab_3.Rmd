@@ -48,14 +48,14 @@ load(file="./data/driving.RData")
 
 ## (5 points) Load the data and produce useful features.
 
-#### Status complete: TODO Check for completeness
+#### Status complete: Checked by Hannah
 
 <!---
 1. (5 points) Load the data and produce useful features. Specifically: 
     - Produce a new variable, called `speed_limit` that re-encodes the data that is in `sl55`, `sl65`, `sl70`, `sl75`, and `slnone`; 
     - Produce a new variable, called `year_of_observation` that re-encodes the data that is in `d80`, `d81`, ... , `d04`. 
     - Produce a new variable for each of the other variables that are one-hot encoded (i.e. `bac*` variable series). 
-    - Rename these variables to sensible names that are legible to a reader of your analysis. For example, the dependent variable as provided is called, `totfatrte`. Pick something more sensible, like, `total_fatalities_rate`. There are few enough of these variables to change, that you should change them for all the variables in the data. (You will thank yourself later.)
+    - Rename these variables to sensible names that are legible to a reader of your analysis. For example, the dependent variable as provided is called, `totfatrte`. Pick something more sensible, like, `total_fatalities_rate`. There are few enough of these variables to change, that you should change them for all the variables in their data. (You will thank yourself later.)
 -->
 
 ```{r reencode}
@@ -74,6 +74,7 @@ df <- data %>%
   mutate(bac = ifelse(blood_alcohol_limit_10 == 1, '10', 
                ifelse(blood_alcohol_limit_08 == 1, '8', 'none'))) %>%
   mutate(bac = factor(bac, levels=c('none', '10', '8'))) %>%
+  mutate(log_total_fatalities_rate = log(totfatrte)) %>%
   select(!c((sl55:slnone), (d80:d04), bac10, bac08)) %>% # Excluding
   rename(minimum_drinking_age = minage, zero_tolerance_law = zerotol,
          graduated_drivers_license_law = gdl, per_se_law = perse,
@@ -90,10 +91,10 @@ df <- data %>%
          seat_belt = seatbelt,
          primary_seatbelt_law = sbprim, secondary_seatbelt_law = sbsecon,
          miles_driven_per_capita = vehicmilespc) %>%
-  mutate(speed_limit_70_plus = ifelse(speed_limit_70_plus>0.5, 1, 0)) %>%
-  mutate(seat_belt_law = ifelse(seat_belt==0, 'none',
-                         ifelse(seat_belt==2, 'secondary', 
-                         ifelse(seat_belt==1, 'primary', 'na')))) %>%
+  mutate(speed_limit_70_plus = ifelse(speed_limit_70_plus > 0.5, 1, 0)) %>%
+  mutate(seat_belt_law = ifelse(seat_belt == 0, 'none',
+                         ifelse(seat_belt == 2, 'secondary', 
+                         ifelse(seat_belt == 1, 'primary', 'na')))) %>%
   mutate(seat_belt_law = factor(seat_belt_law,
                                 levels=c('none', 'secondary', 'primary'))) %>%
   mutate(per_se_law = round(per_se_law, 0)) %>%
@@ -111,19 +112,18 @@ head(main_df)
 
 ## (5 points) Provide a description of the basic structure of the dataset. 
 
-#### Status not-started
+#### Status Complete: Checked by Hannah
 
 <!--
 2. (5 points) Provide a description of the basic structure of the dataset. What is this data? How, where, and when is it collected? Is the data generated through a survey or some other method? Is the data that is presented a sample from the population, or is it a *census* that represents the entire population? Minimally, this should include:
     - How is the our dependent variable of interest `total_fatalities_rate` defined? 
 -->
 
-> TODO
-> TODO
+The data contains state-level information on the total traffic fatalities rate in the specified year. The data also contains state law information that could have an impact on the traffic fatalities rate, like the speed limit, BAC legal limit, seat belt laws, etc. The data is likely a census that represents the entire population since it's on a yearly aggregated level. The outcome of interest, `total_fatalities_rate` is defined as the number of fatalities per 100,000 people.
 
 ##  (20 points) EDA
 
-#### Status Complete: Check for completeness
+#### Status Complete: Add descriptions
 
 <!--
 3. (20 points) Conduct a very thorough EDA, which should include both graphical and tabular techniques, on the dataset, including both the dependent variable `total_fatalities_rate` and the potential explanatory variables. Minimally, this should include: 
@@ -132,9 +132,6 @@ head(main_df)
 
 As with every EDA this semester, the goal of this EDA is not to document your own process of discovery -- save that for an exploration notebook -- but instead it is to bring a reader that is new to the data to a full understanding of the important features of your data as quickly as possible. In order to do this, your EDA should include a detailed, orderly narrative description of what you want your reader to know. Do not include any output -- tables, plots, or statistics -- that you do not intend to write about.
 -->
-
-> TODO
-> TODO
 
 
 ```{r eda plots, fig.height=7, echo=FALSE}
@@ -189,9 +186,9 @@ plt <- df  %>%
 
 ### Average and state wide trends
 
-#### Status Incomplete: Refer to graphs and add descriptive text. Does the dependent variable require a transformation?
+#### Status Complete: Add descriptions.
 
-```{r overall mean EDA, echo=FALSE}
+```{r overall mean EDA, echo=FALSE, fig.align='center', fig.height=4, fig.width=10}
 # Average mean for total_fatalities_rate over years
 main_plt <- main_df %>%
   group_by(year) %>%
@@ -205,7 +202,7 @@ main_plt <- main_df %>%
 
 main_plt
 ```
-
+On the aggregated level, the fatality rate is going down accross the united states. Starting at around 25 traffic fatalities per 100,000 people in 1980 and reducing to around 17 traffic fatalities per 100,000 people in 2004.
 
 ```{r, fatality rate by state EDA, fig.height=6, fig.width=12, echo=FALSE}
 cut_point <- c(-1, 12, 24, 36, 48)
@@ -225,19 +222,26 @@ grid.arrange(plots[[1]], plots[[2]], plots[[3]], plots[[4]], nrow = 2, ncol = 2,
              top = textGrob("Fatality rate by states", gp=gpar(fontsize=20)))
 ```
 
-> 'For most states, fatality rates go down over the years, but some states like Alabama and Arkansas do not show many changes. Surprisingly, Mississippi has an increase in the fatality rate.' 
+For most states, fatality rates go down over the years, but some states like Alabama and Arkansas do not show many changes. Surprisingly, Mississippi has an increase in the fatality rate.
 
-```{r}
-without.tran <- main_df %>% ggplot(aes(x=total_fatalities_rate)) +
-  geom_density() 
+```{r, echo=FALSE, fig.align='center', fig.height=4, fig.width=10}
+without.tran <- main_df %>%
+  ggplot(aes(x = total_fatalities_rate)) +
+    geom_density(color = 'grey', fill = 'grey') +
+    labs(x='Total Fatalities Rate', y = 'Density')
 
-with.tran <- main_df %>% ggplot(aes(x=log_total_fatalities_rate)) +
-  geom_density() 
+with.tran <- main_df %>% 
+  ggplot(aes(x = log_total_fatalities_rate)) +
+  geom_density(color = 'grey', fill = 'grey') +
+    labs(x='Log of Total Fatalities Rate', y = 'Density')
 
-without.tran | with.tran
+(without.tran | with.tran) +
+  plot_annotation(title = 'Log Transform Normalizes Total Fatalities Rate')
 ```
 
-```{r, fig.width=8, fig.height=11, echo=FALSE}
+Taking the log-transform of our outcome variable, `total_fatalities_rate` makes the distribution appear more normal.
+
+```{r,  fig.align='center', fig.width=10, fig.height=12, echo=FALSE}
 
 # Speed limit
 plt.ts.sl = plots.ts.by.group(
@@ -307,9 +311,11 @@ plt.box.bac = plots.box.by.group(
   plot_annotation(title='Time series and distribution comparisons of factor variables')
 ```
 
+> TODO: Add takeaways from above graph
+
 ### Description of variables
 
-#### Status incomplete: TODO: Add figur enumber references to each graph
+#### Status Complete: Format descriptions.
 
 #### Factor variables
 
@@ -320,7 +326,6 @@ plt.box.bac = plots.box.by.group(
 * Some states had Per-Se laws before the start of the data in 1980 and some still did not have Per-Se laws in 2004. There is a gradual increase in the adoption of the law from 1980 to about the 2000s. Surorisingly, there is an increase in fatality rates in comparison of data with PerSe law as compared to without. 
 * Most states had adopted a BAC limit by the mid 80s with two states choosing a limit only in 2002. 
 
-\newpage
 ```{r, fig.width=8, fig.height=9, echo=FALSE}
 
 # population_aged_14_to_24_rate
@@ -374,24 +379,16 @@ plt.scatter.mda = plots.scatter.by.state(
 ```
 
 
-#### Description of continous variables
+#### Description of Continous Variables
 
-* There is a decrease in the percentage of 14 to 24 year olds in the population over time. This is correlated to the decrease in the fatalities during that time period.
+* There is a decrease in the percentage of 14 to 24 year-olds in the population over time. This is correlated to the decrease in the fatalities during that time period.
 * Miles driven per capita also has a positive relationship with fatality rate. An increase in miles driven is associated with an increase in fatality rate 
 * There is an increase in failure rate with an increase in unemployment rate. 
 * The minimum drinking age has been 21 in most states since the late 80s. There is a general decrease in fatality  rate with an increased minimum drinking age but there also has been a general decrease in fatality rates during the time period when the age limits were changed. 
 
- 
-```{r EDA TODO}
-# traffic laws that we are exploring are seat_belt, minimum_drinking_age,
-# zero_tolerance_law, graduated_drivers_license_law, per_se_law, speed_limit, 
-# speed_limit_70_plus, primary_seatbelt_law, secondary_seatbelt_law, 
-# blood_alcohol_limit_10, blood_alcohol_limit_08
-```
-
 # (15 points) Preliminary Model
 
-#### Status complete: TODO Check if anything is missing
+#### Status complete: Checked by Hannah
 
 <!--
 Estimate a linear regression model of *totfatrte* on a set of dummy variables for the years 1981 through 2004 and interpret what you observe. In this section, you should address the following tasks: 
@@ -418,7 +415,7 @@ summary(pooled_ols)
 
 # (15 points) Expanded Model 
 
-#### Status complete: TODO Check if anything is missing
+#### Status complete: Checked by Hannah
 
 <!--
 Expand the **Preliminary Model** by adding variables related to the following concepts: 
@@ -435,25 +432,25 @@ Expand the **Preliminary Model** by adding variables related to the following co
 
 If it is appropriate, include transformations of these variables. Please carefully explain carefully your rationale, which should be based on your EDA, behind any transformation you made. If no transformation is made, explain why transformation is not needed. 
 
-- How are the blood alcohol variables defined? Interpret the coefficients that you estimate for this concept. 
-- Do *per se laws* have a negative effect on the fatality rate? 
-- Does having a primary seat belt law? 
+- How are the blood alcohol variables defined? Interpret the coefficients that you estimate for this concept.
+- Do *per se laws* have a negative effect on the fatality rate?
+- Does having a primary seat belt law?
 -->
 
 ## Transformation (treatment) of Variables
-* As described in a previous section, a log transformation was performed on the response variable to make the distributionb closer to normal.
+* As described in a previous section, a log transformation was performed on the response variable to make the distribution closer to normal.
 
 * States where highway speeds were made over 70mph during the middle of the year contained a fractional value for that year. The fraction was threshold at 0.5 to make this a binary variable. As there is no meaningful interpretation for this variable as a continuous value, this threshold was necessary to convert it into a factor.
 * A state can have a primary, secondary or no seat belt laws. The seat_belt_law reflects these three factors combined into one variable. 
 * Graduated drivers licence law and per-se law parameters both have fractional value for years where the law was implemented mid-year. The fractions was threshold at 0.5 to make this a binary variable. As there is no meaningful interpretation for these variables as a continuous value, this threshold was necessary to convert them into a factor.
-* Although Blood alcohol content (BAC) levels of 8PPM or 10PPM lends itself to a numeric interpretation, there is no numeric value associated with no BAC limit. For this reason BAC has been treated as a factor variable with levels none, 10 and 8. 
-* None of the continuous variables, namely, unemployment rate, miles drive per-capita, rate of 14 to 24 aged people in population required any transformation. This can be seen in the correlation plots in Figure y where their relationhip to log fatality rates appear linear. 
+* Although Blood alcohol content (BAC) levels of 8PPM or 10PPM lends itself to a numeric interpretation, there is no numeric value associated with no BAC limit. For this reason BAC has been treated as a factor variable with levels none, 10 and 8.
+* None of the continuous variables, namely, unemployment rate, miles drive per-capita, rate of 14 to 24 aged people in population required any transformation. This can be seen in the correlation plots in Figure y where their relationhip to log fatality rates appear linear.
 
 ### Pooled OLS Model Creation
 
 ```{r expanded model}
 expanded.ols.data <- main_df %>% select(
-  c(total_fatalities_rate, bac, per_se_law, seat_belt_law, 
+  c(log_total_fatalities_rate, bac, per_se_law, seat_belt_law, 
     graduated_drivers_license_law, population_aged_14_to_24_rate,
     minimum_drinking_age, unemployment_rate, speed_limit_70_plus, 
     miles_driven_per_capita, year, state)) 
@@ -486,7 +483,7 @@ summary(expanded.ols)
 
 # (15 points) State-Level Fixed Effects 
 
-#### Status complete: TODO Check if anything is missing
+#### Status complete: Checked by Hannah
 
 ## Re-estimate the **Expanded Model** using fixed effects at the state level. 
 
