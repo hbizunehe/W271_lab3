@@ -520,10 +520,10 @@ summary(expanded.within)
 
 ## Interpretation of the Model
 
-```{r, echo=FALSE, warning=FALSE, results = 'asis',}
+```{r, echo=FALSE, warning=FALSE, results = 'asis'}
 stargazer(expanded.ols, expanded.within,
           keep=c("bac10", "bac8", "per_se_law1", "seat_belt_lawprimary"),
-          style="qje", omit.stat=c("adj.rsq","f"), 
+          style="qje", omit.stat=c("adj.rsq","f"), header = FALSE,
           column.labels = c( "Pooled OLS", "Within"))
 ```
 
@@ -555,7 +555,7 @@ With a p-value of `r as.numeric(res$p.value)` less than 0.05, we reject the null
 
 # (10 points) Consider a Random Effects Model 
 
-#### Status incomplete
+#### Status Mostly Complete: Include consequences about inappropriately estimating a random effects model.
 
 <!--
 Instead of estimating a fixed effects model, should you have estimated a random effects model?
@@ -567,7 +567,7 @@ Instead of estimating a fixed effects model, should you have estimated a random 
 
 ## Random Effect Model Assumptions
 
-Assumption for a random effects model is $cov(x_{it}, a_i) =0$, i.e. the fixed effect is uncorrelated to the independent variables at any time period.
+Assumption for a random effects model is $cov(x_{it}, a_i) = 0$, i.e. the fixed effect is uncorrelated to the independent variables at any time period.
 
 ## Estimating the Random Effect Model
 
@@ -595,7 +595,7 @@ With a p-value of `r res$p.value` much less than $\alpha$, we reject the null hy
 
 # (10 points) Model Forecasts 
 
-#### Status not-started
+#### Status Completed: Checked by Hannah
 
 <!--
 The COVID-19 pandemic dramatically changed patterns of driving. Find data (and include this data in your analysis, here) that includes some measure of vehicle miles driven in the US. Your data should at least cover the period from January 2018 to as current as possible. With this data, produce the following statements: 
@@ -615,7 +615,7 @@ Now, use these changes in driving to make forecasts from your models.
 # U.S. Federal Highway Administration, Vehicle Miles Traveled [TRFVOLUSM227NFWA],
 #   retrieved from FRED, Federal Reserve Bank of St. Louis;
 # https://fred.stlouisfed.org/series/TRFVOLUSM227NFWA, November 29, 2022.
-
+# Driving mile units in millions
 miles.driven <- 
   readr::read_csv("./data/TRFVOLUSM227NFWA.csv", show_col_types = FALSE) %>%
   rename(miles = TRFVOLUSM227NFWA, date = DATE)
@@ -657,15 +657,14 @@ prev <- miles.driven %>%
 higher.percentage <- max/prev$miles
 ```
 
-> 'The largest decrease in driving was on `r format(as.Date(largest.decrease), "%B %Y")` and it was lower by `r round(lower.percentage * 100, 2)`% amount.'  
-> 'The largest increase in driving was on `r format(as.Date(largest.increase), "%B %Y")` and it was higher by `r round(higher.percentage * 100, 2)`% amount.'  
+The largest month-over-month decrease in driving was in `r format(as.Date(largest.decrease), "%B %Y")` and it was lower by `r round(lower.percentage * 100, 2)`%. This was right as the pandemic was starting to make its way through the country and the response was to shut everything down. So a rapid decrease in driving would make sense. In contrast, the largest month-over-month increase in driving was in `r format(as.Date(largest.increase), "%B %Y")` and it was higher by `r round(higher.percentage * 100, 2)`%. This was right before the pandemic and the increase is not as severe as the pandemic decrease was.
 
 ```{r comparing covid boom and bust impacts on fe model}
 # Source
 # U.S. Bureau of Economic Analysis, Population [POPTHM], 
 # Retrieved from FRED, Federal Reserve Bank of St. Louis; 
 # https://fred.stlouisfed.org/series/POPTHM, December 3, 2022.
-# Pop Units in thousands; driving mile units in millions
+# Pop Units in thousands
 us.pop.month <- 
   readr::read_csv("./data/POPTHM.csv", show_col_types = FALSE) %>%
   rename(total_population = POPTHM, date = DATE) %>%
@@ -680,10 +679,10 @@ min_pop <- us.pop.month %>%
   filter(date == largest.decrease)
 
 # Calculate increase/decrease per capita based on min/max drive values and pop.
-max_month_pop <- max_pop$total_population * 1000 # units in thousands
+max_month_pop <- max_pop$total_population * 1000 # Units in thousands
 min_month_pop <- min_pop$total_population * 1000
-max_miles <- max*1000000 # units in millions
-min_miles <- min*1000000
+max_miles <- max * 1000000 # Units in millions
+min_miles <- min * 1000000
 
 max_miles_driven_pc <- max_miles / max_month_pop
 min_miles_driven_pc <- min_miles / min_month_pop
@@ -694,9 +693,9 @@ fatal_rate_covid_min <- round(coef(expanded.within)['miles_driven_per_capita'] *
 
 ```
 
-> 'The FE model suggests that a one mile increase in the miles driven per capita is associated with a `r format(round(coef(expanded.within)['miles_driven_per_capita'], 5), scientific = FALSE)` unit increase in the fatality rate. During the COVID boom, the largest increase in driving was on `r format(as.Date(largest.increase), "%B %Y")` and it results in a estimated increase of `r round(max_miles_driven_pc,2)` miles driven per capita and this is expected to result in a `r fatal_rate_covid_max` unit increase in the fatality rate.`
+The FE model suggests that a one mile increase in the miles driven per capita is associated with a `r format(round(coef(expanded.within)['miles_driven_per_capita'], 5), scientific = FALSE)` unit increase in the fatality rate. During the COVID boom, the largest increase in driving was on `r format(as.Date(largest.increase), "%B %Y")` and it results in a estimated increase of `r round(max_miles_driven_pc, 2)` miles driven per capita and this is expected to result in a `r fatal_rate_covid_max` unit increase in the fatality rate.
 
-> 'The FE model suggests that a one mile increase in the miles driven per capita is associated with a `r format(round(coef(expanded.within)['miles_driven_per_capita'], 5), scientific = FALSE)` unit increase in the fatality rate. During the COVID boom, the largest decrease in driving was on `r format(as.Date(largest.decrease), "%B %Y")` and it results in a estimated increase of `r round(min_miles_driven_pc,2)`  miles driven per capita and this is expected to result in a `r fatal_rate_covid_min` unit decrease in the fatality rate.`
+In contrast, the largest decrease in driving was on `r format(as.Date(largest.decrease), "%B %Y")` and it results in a estimated decrease of `r round(min_miles_driven_pc, 2)` miles driven per capita and this is expected to result in a `r fatal_rate_covid_min` unit decrease in the fatality rate.
 
 # (5 points) Evaluate Error
 
@@ -711,11 +710,10 @@ If there were serial correlation or heteroskedasticity in the idiosyncratic erro
 We test the residuals for serial correlation. The null hypothesis for the test is that the residuals are not serially correlated and the alternate hypothesis is that the residuals are serially correlated. We check against an $\alpha$ of 0.05.
 
 ```{r durbin watson test for serial correlation}
-res <- pdwtest(expanded.within)
-res
+pwd <- pdwtest(expanded.within)
 ```
 
-> 'With a p-value less than 0.05, we reject the null hypothesis of no serial correlation. This suggests that we must use robust standard errors for model parameters.'
+With a p-value of `r pwd$p.value`, we reject the null hypothesis of no serial correlation. This suggests that we must use robust standard errors for model parameters.
 
 ## Hetroskedasticity Test
 
@@ -723,23 +721,19 @@ We perform a Breusch Pagan test for heteroskedasticity. The null hypothesis for 
 
 ```{r breusch pagan test for heteroskedasticity}
 pcd <- pcdtest(expanded.within, test = "lm")
-pcd
 ```
-> 'With a p-value of less than 0.05, we reject the null hypothesis of homoskedasticity. This suggests that heteroscedasticity is present and our residuals are not distributed with equal variance. We may be able to correct for this by using heteroskedasticity-consistent standard errors or robust standard errors.' 
 
-
-
+With a p-value of `r pcd$p.value`, we reject the null hypothesis of homoskedasticity. This suggests that heteroscedasticity is present and our residuals are not distributed with equal variance. We may be able to correct for this by using heteroskedasticity-consistent standard errors or robust standard errors.' 
 
 We compare the results of the Durbin Watson and Breusch-Godfrey test with order = 2. The null hypothesis is that there is no serial correlation of any order less than or equal to p. 
 
 ```{r compare watson breusch model with order for serial correlation}
 pbg <- pbgtest(expanded.within, order = 2)
-pbg
 ```
-> 'With a p-value of less than 0.05, we reject the null hypothesis and conclude that autocorrelation exists among the residuals at some order less than or equal to p.'
 
+With a p-value of `r pbg$p.value`, we reject the null hypothesis and conclude that autocorrelation exists among the residuals at some order less than or equal to p.
 
-Using vcovHC, we calculate robust standard errors (white1), cluster robust standard errors (white2), arrelano standard errors (arrellano), and newey west standard errors (using vcovNW) for the coefficients within our FE model.
+Using vcovHC, we calculate robust standard errors (white1), cluster robust standard errors (white2), arellano standard errors (arellano), and newey west standard errors (using vcovNW) for the coefficients within our FE model.
 
 ```{r vcovhc test for robust standard erros}
 reg.se <- coef(summary(expanded.within))[1,2]
@@ -749,29 +743,23 @@ nw.se <- sqrt(vcovNW(expanded.within, type = "HC0", maxlag = 1)[1,1])
 arrellano.se <- sqrt(vcovHC(expanded.within, method = "arellano", type = "HC0")[1,1])
 
 data.frame(
-  "Type" = c("Regular OLS", "Robust", "Cluster Robust", "Newey West", "Arrellano"),
+  "Type" = c("Regular OLS", "Robust", "Cluster Robust", "Newey West", "Arellano"),
   "SE" = c(reg.se, het.se, cluster.se, nw.se, arrellano.se)
 )
-
-
 ```
 
-> 'Our analysis shows that the residuals in our model are both heterskedastic and have serial correlation. The results from the vcovHC analysis suggests that cluster robust standard errors are the most robust. Specifically, the standard errors for cluster robust sandard errors are slightly smaller than the regular OLS errors and robust standard error, while quite a bit higher (e.g, greater than 0.003) compared to the other standard error types.`
+Our analysis shows that the residuals in our model are both heterskedastic and have serial correlation. The results from the vcovHC analysis suggests that cluster robust standard errors are the most robust. Specifically, the standard errors for cluster robust sandard errors are slightly smaller than the regular OLS errors and robust standard error, while quite a bit higher (e.g, greater than 0.003) compared to the other standard error types.
 
-
-```{r echo=FALSE}
+```{r echo=FALSE, results='asis'}
 pool.model.se <-sqrt(diag(vcovHC(pooled_ols, method = "white2", type = "HC0")))
 exp.ols.model.se <-sqrt(diag(vcovHC(expanded.ols, method = "white2", type = "HC0")))
 within.model.se <-sqrt(diag(vcovHC(expanded.within, method = "white2", type = "HC0")))
-#expanded.model.se <- sqrt(diag(vcovHC(expanded.re, method = "white2", type = "HC0")))
  
 stargazer(pooled_ols, expanded.ols, expanded.within,
           se=list(pool.model.se, exp.ols.model.se, within.model.se), 
-          style="qje", type="text",
-          omit.stat=c("adj.rsq","f"), 
+          style="qje", omit.stat=c("adj.rsq","f"), header = FALSE,
           column.labels = c( "Pooled", "Expanded OLS", "Within"))
 
 ```
 
-
-> 'When using robust cluster standard errors, our analysis shows that the fixed effects model has the highest R-squared value among the pooled and expanded OLS counterparts, as well as the lowest standard errors.'  
+When using robust cluster standard errors, our analysis shows that the fixed effects model has the highest R-squared value among the pooled and expanded OLS counterparts, as well as the lowest standard errors.
