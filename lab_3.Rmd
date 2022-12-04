@@ -1,7 +1,6 @@
-git ---
+---
 title: 'Lab 3: Panel Models'
 subtitle: 'US Traffic Fatalities: 1980 - 2004'
-author: 'Aswin Thiruvengadam, Nathan Martinez, Haile Bizunehe, Hannah George, and Meera Sharma'
 output:
     pdf_document: 
       toc: true
@@ -58,6 +57,8 @@ load(file="./data/driving.RData")
     - Rename these variables to sensible names that are legible to a reader of your analysis. For example, the dependent variable as provided is called, `totfatrte`. Pick something more sensible, like, `total_fatalities_rate`. There are few enough of these variables to change, that you should change them for all the variables in their data. (You will thank yourself later.)
 -->
 
+
+
 ```{r reencode}
 # For the fractions, we are taking the majority as a speed limit
 # We skipped year_of_observation since there a year column which aligns with dx
@@ -66,15 +67,15 @@ df <- data %>%
                        ifelse(sl65 >= 0.5, '65',
                        ifelse(sl70 >= 0.5, '70',
                        ifelse(sl75 >= 0.5, '75',
-                       ifelse(slnone >= 0.5, 'none', '0')))))) %>%
-  mutate(speed_limit = factor(speed_limit,
-                              levels = c('55', '65', '70', '75', 'none')),
+                       ifelse(slnone >= 0.5, 'none', '0')
+                       ))))) %>%
+           mutate(speed_limit=factor(speed_limit, 
+                  levels=c('55', '65', '70', '75', 'none')),
          blood_alcohol_limit_10 = ifelse(bac10 >= 0.5, 1, 0),
          blood_alcohol_limit_08 = ifelse(bac08 >= 0.5, 1, 0)) %>% 
-  mutate(bac = ifelse(blood_alcohol_limit_10 == 1, '10', 
-               ifelse(blood_alcohol_limit_08 == 1, '8', 'none'))) %>%
-  mutate(bac = factor(bac, levels=c('none', '10', '8'))) %>%
-  mutate(log_total_fatalities_rate = log(totfatrte)) %>%
+  mutate(bac=ifelse(blood_alcohol_limit_10==1, '10', 
+             ifelse(blood_alcohol_limit_08==1, '8', 'none'))) %>%
+  mutate(bac=factor(bac, levels=c('none', '10', '8'))) %>%
   select(!c((sl55:slnone), (d80:d04), bac10, bac08)) %>% # Excluding
   rename(minimum_drinking_age = minage, zero_tolerance_law = zerotol,
          graduated_drivers_license_law = gdl, per_se_law = perse,
@@ -91,14 +92,19 @@ df <- data %>%
          seat_belt = seatbelt,
          primary_seatbelt_law = sbprim, secondary_seatbelt_law = sbsecon,
          miles_driven_per_capita = vehicmilespc) %>%
-  mutate(speed_limit_70_plus = ifelse(speed_limit_70_plus > 0.5, 1, 0)) %>%
-  mutate(seat_belt_law = ifelse(seat_belt == 0, 'none',
-                         ifelse(seat_belt == 2, 'secondary', 
-                         ifelse(seat_belt == 1, 'primary', 'na')))) %>%
-  mutate(seat_belt_law = factor(seat_belt_law,
-                                levels=c('none', 'secondary', 'primary'))) %>%
-  mutate(per_se_law = round(per_se_law, 0)) %>%
-  mutate(per_se_law = factor(per_se_law, levels=c(0, 1)))
+  mutate(speed_limit_70_plus = 
+           ifelse(speed_limit_70_plus>0.5, 1, 0)
+           ) %>%
+  mutate(seat_belt_law = 
+           ifelse(seat_belt==0, 'none',
+           ifelse(seat_belt==2, 'secondary', 
+           ifelse(seat_belt==1, 'primary', 'na')))) %>%
+  mutate(seat_belt_law=factor(seat_belt_law, 
+                              levels=c('none', 'secondary', 'primary')),
+         ) %>%
+  mutate(per_se_law=round(per_se_law, 0)) %>%
+  mutate(per_se_law=factor(per_se_law, levels=c(0, 1))) %>%
+  mutate(log_total_fatalities_rate = log10(total_fatalities_rate))
   
 
 # Adding states to the dataframe
@@ -443,11 +449,10 @@ If it is appropriate, include transformations of these variables. Please careful
 
 ## Transformation (treatment) of Variables
 * As described in a previous section, a log transformation was performed on the response variable to make the distribution closer to normal.
-
 * States where highway speeds were made over 70mph during the middle of the year contained a fractional value for that year. The fraction was thresholded at 0.5 to make this a binary variable. As there is no meaningful interpretation for this variable as a continuous value, this threshold was necessary to convert it into a factor.
 * A state can have a primary, secondary or no seat belt laws. The seat_belt_law reflects these three factors combined into one variable. 
 * Graduated drivers licence law and per-se law parameters both have fractional value for years where the law was implemented mid-year. The fractions were thresholded at 0.5 to make this a binary variable. As there is no meaningful interpretation for these variables as a continuous value, this threshold was necessary to convert them into a factor.
-* Although Blood alcohol content (BAC) levels of 8PPM or 10PPM lends itself to a numeric interpretation, there is no numeric value associated with no BAC limit. For this reason BAC has been treated as a factor variable with levels none, 10 and 8.
+* Although Blood alcohol content (BAC) levels of 0.08% or 0.1% lends itself to a numeric interpretation, there is no numeric value associated with no BAC limit. For this reason BAC has been treated as a factor variable with levels none, 10 and 8.
 * None of the continuous variables, namely, unemployment rate, miles drive per-capita, proportion  of 14 to 24 aged people in population required any transformation. This can be seen in the correlation plots in Figure y where their relationship to log fatality rates appear linear.
 
 ### Pooled OLS Model Creation
@@ -475,15 +480,15 @@ summary(expanded.ols)
 
 ###  How are the blood alcohol variables defined? Interpret the coefficients that you estimate for this concept. 
 
-* In an earlier section we have defined our treatment of the BAC variable as a factor with levels none, 10 and 8. In this model we note that the base level is no blood alcohol limit. We also note that bac value of 0.1% and 0.08% are both statistically significant parameters. The model suggests that setting a blood alcohol limit of 0.1% is associated with a `r abs(round(coef(expanded.ols)['bac10'], 2))` unit decrease in fatality rate as compared to no BAC limit.  The model suggests that a setting a blood alcohol limit of 0.08% is associated with a `r abs(round(coef(expanded.ols)['bac8'], 2))` unit decrease in fatality rate as compared to no BAC limit.
+* In an earlier section we have defined our treatment of the BAC variable as a factor with levels 'none', '10' and '8'. In this model we note that the base level is no blood alcohol limit. We note that bac value of 0.08% is statistically significant and 0.1% is not statistically significant. The model suggests that setting a blood alcohol limit of 0.1% is associated with a ```r round(10^coef(expanded.ols)['bac10'], 2)``` times decrease in fatality rate as compared to no BAC limit.  The model suggests that a setting a blood alcohol limit of 0.08% is associated with a ```r round(10^coef(expanded.ols)['bac8'], 2)``` times decrease in fatality rate as compared to no BAC limit.
     
 ### Do *per se laws* have a negative effect on the fatality rate? 
 
-* We note that per-se law is a statistically significant parameter. The model suggests that having a per-se law is associated with a `r abs(round(coef(expanded.ols)['per_se_law1'], 2))` unit decrease in fatality rate as compared to not having per-se law.
+* We note that per-se law is not a statistically significant parameter. The model suggests that havng a per-se law is associated with a ```r round(10^coef(expanded.ols)['per_se_law1'], 2)``` times decrease in fatality rate as compared to not having per-se law.
 
 ### Does having a primary seat belt law reduce fatality rates?
 
-* We note that the seat belt law factors are not statistically significant. We also note that the coefficient of  `r abs(round(coef(expanded.ols)['seat_belt_lawprimary'], 4))` is practically small. 
+* We note that the seat belt law factors are not statistically significant. We also note that the implementation of the primary law leads to a  ```r round(10^coef(expanded.ols)['seat_belt_lawprimary'], 3)``` times decrease in fatality rate which is practically insignificant. 
 
 # (15 points) State-Level Fixed Effects 
 
@@ -530,18 +535,19 @@ stargazer(expanded.ols, expanded.within,
 
 ### What do you estimate for coefficients on the blood alcohol variables? How do the coefficients on the blood alcohol variables change, if at all? 
 
-We also note that BAC value of 0.1% and 0.08% are both statistically significant parameters. 
+Wenote that bac value of 0.1% and 0.08% are both statistically significant parameters. 
 
-  * This model suggests that setting a blood alcohol limit of 0.1% is associated with a `r abs(round(coef(expanded.within)['bac10'], 2))` unit decrease in fatality rate as compared to no BAC limit. Compared to the OLS model which showed that setting a blood alcohol limit of 0.1% is associated with a `r abs(round(coef(expanded.ols)['bac10'], 2))` unit decrease in fatality rate as compared to no BAC limit. 
-  * This model suggests that a setting a blood alcohol limit of 0.08% is associated with a `r abs(round(coef(expanded.within)['bac8'], 2))` unit decrease in fatality rate as compared to no BAC limit. Compared to the OLS model which showed that setting a blood alcohol limit of 0.08% is associated with a `r abs(round(coef(expanded.within)['bac8'], 2))` unit decrease in fatality rate as compared to no BAC limit.
+  * This model suggests that setting a blood alcohol limit of 0.1% is associated with a ```r round(10^coef(expanded.within)['bac10'], 2)``` times decrease in log fatality rate as compared to no BAC limit. Compared to the OLS model which showed that setting a blood alcohol limit of 0.1% is associated with a ```r round(10^coef(expanded.ols)['bac10'], 2)``` times decrease in fatality rate as compared to no BAC limit. 
+  * This model suggests that a setting a blood alcohol limit of 0.08% is associated with a ```r round(10^coef(expanded.within)['bac8'], 2)``` times decrease in fatality rate as compared to no BAC limit. Compared to the OLS model which showed that setting a blood alcohol limit of 0.08% is associated with a ```r round(10^coef(expanded.within)['bac8'], 2)``` times decrease in fatality rate as compared to no BAC limit.
+
 
 ### What do you estimate for coefficients on per se laws? How do the coefficients on per se laws change, if at all? 
 
-We note that per-se law is a statistically significant parameter. This model suggests that having a per-se law is associated with a `r abs(round(coef(expanded.within)['per_se_law1'], 2))` unit decrease in fatality rate as compared to not having per-se law. Compared to the OLS model which showed that having a per-se law is associated with a `r abs(round(coef(expanded.ols)['per_se_law1'], 2))` unit decrease in fatality rate as compared to not having per-se law
+We note that per-se law is a statistically significant parameter. This model suggests that having a per-se law is associated with a ```r round(10^coef(expanded.within)['per_se_law1'], 2)``` times decrease in fatality rate as compared to not having per-se law. Compared to the OLS model which showed that havng a per-se law is associated with a ```r round(10^coef(expanded.ols)['per_se_law1'], 2)``` times decrease in fatality rate as compared to not having per-se law
 
 ### What do you estimate for coefficients on primary seat-belt laws? How do the coefficients on primary seatbelt laws change, if at all?
 
-In this model we note that seat belt primary law is a significant factor. This model suggests that having a primary seat belt law is associated with a `r abs(round(coef(expanded.within)['seat_belt_lawprimary'], 2))` unit decrease in fatality rate as compared to not having  primary seat belt law. Compared to the OLS model for which the parameter was not statistically significant and had a near-zero value of `r abs(round(coef(expanded.ols)['seat_belt_lawprimary'], 2))`
+In this model we note that seat belt primary law is a significant factor. This model suggests that having a primary seat belt law is associated with a ```r round(10^coef(expanded.within)['seat_belt_lawprimary'], 2)``` unit decrease in fatality rate as compared to not having  primary seat belt law. Compared to the OLS model for which the parameter was not statistically significant and had a close to 0 value of ```r round(10^coef(expanded.ols)['seat_belt_lawprimary'], 2)```
 
 ## Model Assumptions
 
