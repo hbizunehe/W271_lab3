@@ -484,7 +484,7 @@ summary(expanded.ols)
     
 ### Do *per se laws* have a negative effect on the fatality rate? 
 
-* We note that per-se law is not a statistically significant parameter. The model suggests that havng a per-se law is associated with a ```r round(10^coef(expanded.ols)['per_se_law1'], 2)``` times decrease in fatality rate as compared to not having per-se law.
+* We note that per-se law is not a statistically significant parameter. The model suggests that having a per-se law is associated with a ```r round(10^coef(expanded.ols)['per_se_law1'], 2)``` times decrease in fatality rate as compared to not having per-se law.
 
 ### Does having a primary seat belt law reduce fatality rates?
 
@@ -535,7 +535,7 @@ stargazer(expanded.ols, expanded.within,
 
 ### What do you estimate for coefficients on the blood alcohol variables? How do the coefficients on the blood alcohol variables change, if at all? 
 
-Wenote that bac value of 0.1% and 0.08% are both statistically significant parameters. 
+We note that BAC value of 0.1% and 0.08% are both statistically significant parameters. 
 
   * This model suggests that setting a blood alcohol limit of 0.1% is associated with a ```r round(10^coef(expanded.within)['bac10'], 2)``` times decrease in log fatality rate as compared to no BAC limit. Compared to the OLS model which showed that setting a blood alcohol limit of 0.1% is associated with a ```r round(10^coef(expanded.ols)['bac10'], 2)``` times decrease in fatality rate as compared to no BAC limit. 
   * This model suggests that a setting a blood alcohol limit of 0.08% is associated with a ```r round(10^coef(expanded.within)['bac8'], 2)``` times decrease in fatality rate as compared to no BAC limit. Compared to the OLS model which showed that setting a blood alcohol limit of 0.08% is associated with a ```r round(10^coef(expanded.within)['bac8'], 2)``` times decrease in fatality rate as compared to no BAC limit.
@@ -578,7 +578,7 @@ Assumption for a random effects model is $cov(x_{it}, a_i) = 0$, i.e. the fixed 
 ## Estimating the Random Effect Model
 
 ```{r random model}
-expanded.re <- plm(log(log_total_fatalities_rate) ~  bac + year  +
+expanded.re <- plm(log_total_fatalities_rate ~  bac + year  +
                       population_aged_14_to_24_rate + miles_driven_per_capita + 
                       unemployment_rate + speed_limit_70_plus + per_se_law + 
                       seat_belt_law + graduated_drivers_license_law,
