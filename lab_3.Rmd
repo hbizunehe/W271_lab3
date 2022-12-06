@@ -700,16 +700,16 @@ max_miles_driven_pc <- max_miles / max_month_pop
 min_miles_driven_pc <- min_miles / min_month_pop
   
 # fatal rate - represents increases/decreases in the fatality rate
-fatal_rate_covid_max <- round(10^(coef(expanded.within)['miles_driven_per_capita']
-                              * max_miles_driven_pc), 3) 
-fatal_rate_covid_min <- round(10^(coef(expanded.within)['miles_driven_per_capita']
-                              * min_miles_driven_pc), 3)
+fatal_rate_covid_max <- round(coef(expanded.within)['miles_driven_per_capita']
+                              * max_miles_driven_pc, 3) 
+fatal_rate_covid_min <- round(coef(expanded.within)['miles_driven_per_capita']
+                              * min_miles_driven_pc, 3)
 
 ```
 
-The FE model suggests that a one mile increase in the miles driven per capita is associated with a `r format(round(10^coef(expanded.within)['miles_driven_per_capita'], 5), scientific = FALSE)` unit increase in the fatality rate. During the COVID boom, the largest increase in driving was on `r format(as.Date(largest.increase), "%B %Y")` and it results in a estimated increase of `r round(max_miles_driven_pc, 2)` miles driven per capita and this is expected to result in a `r fatal_rate_covid_max` unit increase in the fatality rate.
+The FE model suggests that a one mile increase in the miles driven per capita is associated with, ceteris paribus, a `r format(round(coef(expanded.within)['miles_driven_per_capita'], 5), scientific = FALSE)` log increase in the fatality rate. During the COVID boom, the largest increase in driving was on `r format(as.Date(largest.increase), "%B %Y")` and it results, ceteris paribus, in an estimated increase of `r round(max_miles_driven_pc, 2)` miles driven per capita and this is expected to result in a `r fatal_rate_covid_max` log increase in the fatality rate.
 
-In contrast, the largest decrease in driving was on `r format(as.Date(largest.decrease), "%B %Y")` and it results in a estimated decrease of `r round(min_miles_driven_pc, 2)` miles driven per capita and this is expected to result in a `r fatal_rate_covid_min` unit decrease in the fatality rate.
+In contrast, the largest decrease in driving was on `r format(as.Date(largest.decrease), "%B %Y")` and it results, ceteris paribus, in an estimated decrease of `r round(min_miles_driven_pc, 2)` miles driven per capita and this is expected to result in a `r fatal_rate_covid_min` log decrease in the fatality rate.
 
 # (5 points) Evaluate Error
 
