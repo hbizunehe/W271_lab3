@@ -231,7 +231,7 @@ for (i in 2:5) {
 grid.arrange(plots[[1]], plots[[2]], plots[[3]], plots[[4]], nrow = 2, ncol = 2,
              top = textGrob("Fatality rate by states", gp=gpar(fontsize=20)))
 ```
-Splitting the data by state provides the additional context needed to understand the trend in traffic fatalities. For most states, as is expected, the fatality rates decreased over the years. However, for some states, like Alabama and Arkansas, the trend is does not show much change over time. Mississipi, on the other hand, shows an increase in fatality rate over time.
+Splitting the data by state provides the additional context needed to understand the trend in traffic fatalities. For most states, as is expected, the fatality rates decreased over the years. However, for some states, like Alabama and Arkansas, the trend does not show much change over time. Mississipi, on the other hand, shows an increase in fatality rate over time.
 
 
 ```{r, echo=FALSE, fig.align='center', fig.height=4, fig.width=10}
@@ -480,7 +480,7 @@ summary(expanded.ols)
 
 ###  How are the blood alcohol variables defined? Interpret the coefficients that you estimate for this concept. 
 
-* In an earlier section we have defined our treatment of the BAC variable as a factor with levels 'none', '10' and '8'. In this model we note that the base level is no blood alcohol limit. We note that bac value of 0.08% is statistically significant and 0.1% is not statistically significant. The model suggests that setting a blood alcohol limit of 0.1% is associated with a ```r round(10^coef(expanded.ols)['bac10'], 2)``` times decrease in fatality rate as compared to no BAC limit.  The model suggests that a setting a blood alcohol limit of 0.08% is associated with a ```r round(10^coef(expanded.ols)['bac8'], 2)``` times decrease in fatality rate as compared to no BAC limit.
+* In an earlier section we have defined our treatment of the BAC variable as a factor with levels 'none', '10' and '8'. In this model we note that the base level is no blood alcohol limit. We note that bac value of 0.08% is statistically significant and 0.1% is not statistically significant. The model suggests that setting a blood alcohol limit of 0.1% is associated with a ```r round(10^coef(expanded.ols)['bac10'], 2)``` times decrease in fatality rate as compared to no BAC limit.  The model suggests that setting a blood alcohol limit of 0.08% is associated with a ```r round(10^coef(expanded.ols)['bac8'], 2)``` times decrease in fatality rate as compared to no BAC limit.
     
 ### Do *per se laws* have a negative effect on the fatality rate? 
 
@@ -538,12 +538,12 @@ stargazer(expanded.ols, expanded.within,
 We note that BAC value of 0.1% and 0.08% are both statistically significant parameters. 
 
   * This model suggests that setting a blood alcohol limit of 0.1% is associated with a ```r round(10^coef(expanded.within)['bac10'], 2)``` times decrease in log fatality rate as compared to no BAC limit. Compared to the OLS model which showed that setting a blood alcohol limit of 0.1% is associated with a ```r round(10^coef(expanded.ols)['bac10'], 2)``` times decrease in fatality rate as compared to no BAC limit. 
-  * This model suggests that a setting a blood alcohol limit of 0.08% is associated with a ```r round(10^coef(expanded.within)['bac8'], 2)``` times decrease in fatality rate as compared to no BAC limit. Compared to the OLS model which showed that setting a blood alcohol limit of 0.08% is associated with a ```r round(10^coef(expanded.within)['bac8'], 2)``` times decrease in fatality rate as compared to no BAC limit.
+  * This model suggests that setting a blood alcohol limit of 0.08% is associated with a ```r round(10^coef(expanded.within)['bac8'], 2)``` times decrease in fatality rate as compared to no BAC limit. Compared to the OLS model which showed that setting a blood alcohol limit of 0.08% is associated with a ```r round(10^coef(expanded.within)['bac8'], 2)``` times decrease in fatality rate as compared to no BAC limit.
 
 
 ### What do you estimate for coefficients on per se laws? How do the coefficients on per se laws change, if at all? 
 
-We note that per-se law is a statistically significant parameter. This model suggests that having a per-se law is associated with a ```r round(10^coef(expanded.within)['per_se_law1'], 2)``` times decrease in fatality rate as compared to not having per-se law. Compared to the OLS model which showed that havng a per-se law is associated with a ```r round(10^coef(expanded.ols)['per_se_law1'], 2)``` times decrease in fatality rate as compared to not having per-se law
+We note that per-se law is a statistically significant parameter. This model suggests that having a per-se law is associated with a ```r round(10^coef(expanded.within)['per_se_law1'], 2)``` times decrease in fatality rate as compared to not having per-se law. Compared to the OLS model which showed that having a per-se law is associated with a ```r round(10^coef(expanded.ols)['per_se_law1'], 2)``` times decrease in fatality rate as compared to not having per-se law
 
 ### What do you estimate for coefficients on primary seat-belt laws? How do the coefficients on primary seatbelt laws change, if at all?
 
