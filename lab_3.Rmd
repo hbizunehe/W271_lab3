@@ -141,38 +141,46 @@ As with every EDA this semester, the goal of this EDA is not to document your ow
 
 
 ```{r eda plots, fig.height=7, echo=FALSE}
+# Variable name to actual name mapping that will used in the plot
+name.map <- list(log_total_fatalities_rate = 'Log total fatality rate',
+                 speed_limit = 'Speed limit', bac = 'BAC',
+                 speed_limit_70_plus = 'Speed limit 70 plus',
+                 seat_belt_law = 'Seat belt law',
+                 graduated_drivers_license_law = 'Graduated drivers license law',
+                 per_se_law = 'Per se law',
+                 population_aged_14_to_24_rate = 'Aged 14 to 24 rate',
+                 miles_driven_per_capita = 'Miles driven per capita',
+                 unemployment_rate = 'Unemployment rate',
+                 minimum_drinking_age = 'Minimum drinking age')
 
 # Time series line plot
 # Variable to plot as var_name
 # Each line gets a color based on the group_name
 # X-axis is always year
 plots.ts.by.group <- function(df, var_name, group_name, subtitle='') {
-plt <- df %>% 
-  mutate(!!group_name := factor(df[[group_name]])) %>% 
-    ggplot(aes_string(x='year', y=var_name, group='state')) + 
-    geom_line(aes_string(color=group_name)) +
-  labs(subtitle=subtitle) +
-  theme(legend.position = c(0.8, 0.8), legend.key.size = unit(0.2, "cm"), 
-        legend.text=element_text(size=rel(0.5)), 
-        legend.title=element_text(size=rel(0.7)))
-  return((plt))
+  plt <- df %>% 
+    mutate(!!group_name := factor(df[[group_name]])) %>% 
+      ggplot(aes_string(x='year', y=var_name, group='state')) + 
+      geom_line(aes_string(color=group_name)) +
+    labs(subtitle=subtitle, x = 'Year', y=name.map[[var_name]],
+         color=name.map[[group_name]]) +
+    theme(legend.position = c(0.8, 0.8), legend.key.size = unit(0.2, "cm"), 
+          legend.text=element_text(size=rel(0.5)), 
+          legend.title=element_text(size=rel(0.7)))
+    return((plt))
 }
-
 
 # Box plot by group
 # Variable to plot as var_name
 # Each group is plit by group_name
-plots.box.by.group <- function(df, var_name, group_name, subtitle='') 
-  {
-plt <- df %>% mutate(factored=factor(df[[group_name]])) %>% 
-    ggplot(aes_string(x='factored', y=var_name)) + 
-     geom_boxplot(outlier.colour="red", outlier.shape=8,  outlier.size=4) +
-  theme(axis.text.x=element_text(angle=-90)) +
-  labs(subtitle=subtitle) +
-  xlab(group_name)
-  return((plt))
+plots.box.by.group <- function(df, var_name, group_name, subtitle='')  {
+  plt <- df %>% mutate(factored=factor(df[[group_name]])) %>%
+    ggplot(aes_string(x='factored', y=var_name)) +
+    geom_boxplot(outlier.colour="red", outlier.shape=8,  outlier.size=4) +
+    theme(axis.text.x=element_text(angle=-90)) +
+    labs(subtitle=subtitle, x=name.map[[group_name]], y=name.map[[var_name]])
+    return((plt))
 }
-
 
 # Time series line plot
 # Variable to plot as var_name
@@ -183,11 +191,11 @@ plt <- df  %>%
     ggplot(aes_string(x=var_name, y='log_total_fatalities_rate')) +
     geom_point(aes(color=state_name)) + 
   geom_smooth(method = lm, formula = y ~ x) + 
-  labs(subtitle=subtitle) +
+  labs(subtitle=subtitle, x=name.map[[var_name]],
+       y=name.map$log_total_fatalities_rate) +
   theme(legend.position = 'none')
   return((plt))
 }
-
 ```
 
 ### Average and state wide trends
@@ -252,7 +260,6 @@ with.tran <- main_df %>%
 The `total_fatalities_rate` variable follows a right-skewed distribution. In the plot shown above, we see that the log-transformation helps make the distribution more normal
 
 ```{r,  fig.align='center', fig.width=10, fig.height=12, echo=FALSE, warning=FALSE}
-
 # Speed limit
 plt.ts.sl = plots.ts.by.group(
   main_df, 'log_total_fatalities_rate', 'speed_limit',
@@ -337,46 +344,45 @@ plt.box.bac = plots.box.by.group(
 * Lastly, most states had adopted a blood alcohol limit by the mid 80s, with two states choosing a limit only in 2002. 
 
 ```{r, fig.width=8, fig.height=9, echo=FALSE}
-
 # population_aged_14_to_24_rate
 tmp_df <- main_df %>% mutate(population_aged_14_to_24_rate=
                                round(population_aged_14_to_24_rate/3, 0) *3)
 plt.ts.perc = plots.ts.by.group(
   tmp_df, 'log_total_fatalities_rate', 'population_aged_14_to_24_rate',
-  subtitle='Traffic fatalities by state colored by pop 14 to 24 age rate')
+  subtitle='Traffic fatalities by age 14 to 24 rate')
 
 tmp_df <- main_df %>% filter(year>1980)
 plt.scatter.perc = plots.scatter.by.state(
   main_df, 'population_aged_14_to_24_rate',
-  subtitle='population aged 14 to 24_rate relationship to fatality rate')
+  subtitle='Aged 14 to 24 rate relationship to fatality rate')
 
 # Miles driven per capita
 tmp_df <- main_df %>% mutate(miles_driven_per_capita=
                                round(miles_driven_per_capita/2000, 0)*2000)
 plt.ts.mpc = plots.ts.by.group(
   tmp_df, 'log_total_fatalities_rate', 'miles_driven_per_capita',
-  subtitle='Traffic fatalities in state colored by miles_driven_per_capita')
+  subtitle='Traffic fatalities by miles driven per capita')
 
 plt.scatter.mpc = plots.scatter.by.state(
   main_df, 'miles_driven_per_capita',
-  subtitle='miles driven per capita relationship to fatality rate')
+  subtitle='Miles driven per capita relationship to fatality rate')
 
 # Unemployment rate
 tmp_df <- main_df %>% mutate(unemployment_rate=round(unemployment_rate/3, 0)*3)
 
 plt.ts.ur = plots.ts.by.group(
   tmp_df, 'log_total_fatalities_rate', 'unemployment_rate',
-  subtitle='Traffic fatalities in state colored by unemployment rate')
+  subtitle='Traffic fatalities by unemployment rate')
 
 plt.scatter.ur = plots.scatter.by.state(
   main_df, 'unemployment_rate',
-  subtitle='unemployment rate relationship to fatality rate')
+  subtitle='Unemployment rate relationship to fatality rate')
 
 # Minimum drinking age
 tmp_df <- main_df %>% mutate(minimum_drinking_age=round(minimum_drinking_age, 0))
 plt.ts.mda = plots.ts.by.group(
   tmp_df, 'log_total_fatalities_rate', 'minimum_drinking_age',
-  subtitle='Traffic fatalities in state colored by minimum drinking age')
+  subtitle='Traffic fatalities by minimum drinking age')
 
 plt.scatter.mda = plots.scatter.by.state(
   main_df, 'minimum_drinking_age',
@@ -385,7 +391,7 @@ plt.scatter.mda = plots.scatter.by.state(
 
 (plt.ts.perc | plt.scatter.perc) /  (plt.ts.mpc | plt.scatter.mpc) /
   (plt.ts.ur | plt.scatter.ur) / (plt.ts.mda | plt.scatter.mda) +
-  plot_annotation(title='Time series and correlation comparison of continous variables')
+  plot_annotation(title='Time series and correlation comparison of continous variables colored by variable values')
 ```
 
 
@@ -420,7 +426,7 @@ summary(pooled_ols)
 ```
 
 * 'Starting from a linear model gives us an easy and intuitive way to understand the overall trend pattern over the years via the coefficients on the year dummy variables. In later sections, the report details panel data analysis that can be compared against this benchmark.'  
-* 'This model explains the log of fatality rate over different years compared to the baseline year, which is 1980. All coefficients except for the 1981 year are statistically significant. From this model, we learn that in all years following the baseline up to 2004, the fatality rate goes down compared to the baseline year 1980. The decline accelerates as the year increases but not consistently, as seen, for example, between 1986 - 1988, where the fatality rate increases compared to previous years. However, it returns to the decline track/trend in 1989. The higher, in absolute value, coefficients over the years means that driving becomes safer as the fatality rate keeps decreasing. For example, the fatality rate, which was 25.5 as of 1980, became 19.5 in 1990, 16.8 in 2000, and 16.7 in 2004, showing that driving over the years has become safer. In other words, around 8.8 fewer people are predicted to be involved in traffic fatalities out of 100,000 people in 2004 than in 1980 as per this model.'   
+* 'This model explains the log of fatality rate over different years compared to the baseline year, which is 1980. All coefficients except for the 1981 year are statistically significant. From this model, we learn that in all years following the baseline up to 2004, the fatality rate goes down compared to the baseline year 1980. The decline accelerates as the year increases but not consistently, as seen, for example, between 1986 - 1988, where the fatality rate increases compared to previous years. However, it returns to the decline track/trend in 1989. The higher, in absolute value, coefficients over the years means that driving becomes safer as the fatality rate keeps decreasing. For example, the fatality rate, which was ```r round(10^coef(pooled_ols)['(Intercept)'], 2)``` as of 1980, became ```r round(10^coef(pooled_ols)['year1990'], 2)``` in 1990, ```r round(10^coef(pooled_ols)['year2000'], 2)``` in 2000, and ```r round(10^coef(pooled_ols)['year2004'], 2)``` in 2004, showing that driving over the years has become safer. In other words, ```r(round(10^coef(pooled_ols)['(Intercept)'] - 10^(coef(pooled_ols)['(Intercept)']+coef(pooled_ols)['year2004']), 2))``` fewer people are predicted to be involved in traffic fatalities out of 100,000 people in 2004 than in 1980 as per this model.'   
 * 'Note that we are ignoring unobserved Heterogeneity and the group structure by taking each entry as a separate observation. Because of that, residuals generally correlate across time and have heteroskedasticity across and/or within groups. Heteroscedastic residuals are a violation of the OLS Homoscedasticity assumption, which will make it difficult to trust the standard error. As a result, the confidence interval can not be trusted as it can be too wide or narrow. Also, the independence assumption (no autocorrelation) is violated since we did not accommodate the lag/trend component, which makes the OLS estimates to be unreliable; in other words, our OLS estimator is not the Best Linear Unbiased Estimator.'   
 
 # (15 points) Expanded Model 
@@ -480,15 +486,15 @@ summary(expanded.ols)
 
 ###  How are the blood alcohol variables defined? Interpret the coefficients that you estimate for this concept. 
 
-* In an earlier section we have defined our treatment of the BAC variable as a factor with levels 'none', '10' and '8'. In this model we note that the base level is no blood alcohol limit. We note that bac value of 0.08% is statistically significant and 0.1% is not statistically significant. The model suggests that setting a blood alcohol limit of 0.1% is associated with a ```r round(10^coef(expanded.ols)['bac10'], 2)``` times decrease in fatality rate as compared to no BAC limit.  The model suggests that setting a blood alcohol limit of 0.08% is associated with a ```r round(10^coef(expanded.ols)['bac8'], 2)``` times decrease in fatality rate as compared to no BAC limit.
+* In an earlier section we have defined our treatment of the BAC variable as a factor with levels 'none', '10' and '8'. In this model we note that the base level is no blood alcohol limit. We note that bac value of 0.08% is statistically significant and 0.1% is not statistically significant. The model suggests that setting a blood alcohol limit of 0.1% is associated with, ceteris paribus, a ```r round(10^coef(expanded.ols)['bac10'], 2)``` times decrease in fatality rate as compared to no BAC limit.  The model suggests that setting a blood alcohol limit of 0.08% is associated with, ceteris paribus, a ```r round(10^coef(expanded.ols)['bac8'], 2)``` times decrease in fatality rate as compared to no BAC limit.
     
 ### Do *per se laws* have a negative effect on the fatality rate? 
 
-* We note that per-se law is not a statistically significant parameter. The model suggests that having a per-se law is associated with a ```r round(10^coef(expanded.ols)['per_se_law1'], 2)``` times decrease in fatality rate as compared to not having per-se law.
+* We note that per-se law is not a statistically significant parameter. The model suggests that having a per-se law is associated with, ceteris paribus, a ```r round(10^coef(expanded.ols)['per_se_law1'], 2)``` times decrease in fatality rate as compared to not having per-se law.
 
 ### Does having a primary seat belt law reduce fatality rates?
 
-* We note that the seat belt law factors are not statistically significant. We also note that the implementation of the primary law leads to a  ```r round(10^coef(expanded.ols)['seat_belt_lawprimary'], 3)``` times decrease in fatality rate which is practically insignificant. 
+* We note that the seat belt law factors are not statistically significant. We also note that the implementation of the primary law leads to, ceteris paribus, a  ```r round(10^coef(expanded.ols)['seat_belt_lawprimary'], 3)``` times decrease in fatality rate which is practically insignificant. 
 
 # (15 points) State-Level Fixed Effects 
 
@@ -537,17 +543,17 @@ stargazer(expanded.ols, expanded.within,
 
 We note that BAC value of 0.1% and 0.08% are both statistically significant parameters. 
 
-  * This model suggests that setting a blood alcohol limit of 0.1% is associated with a ```r round(10^coef(expanded.within)['bac10'], 2)``` times decrease in log fatality rate as compared to no BAC limit. Compared to the OLS model which showed that setting a blood alcohol limit of 0.1% is associated with a ```r round(10^coef(expanded.ols)['bac10'], 2)``` times decrease in fatality rate as compared to no BAC limit. 
-  * This model suggests that setting a blood alcohol limit of 0.08% is associated with a ```r round(10^coef(expanded.within)['bac8'], 2)``` times decrease in fatality rate as compared to no BAC limit. Compared to the OLS model which showed that setting a blood alcohol limit of 0.08% is associated with a ```r round(10^coef(expanded.within)['bac8'], 2)``` times decrease in fatality rate as compared to no BAC limit.
+  * This model suggests that setting a blood alcohol limit of 0.1% is associated with, ceteris paribus, a ```r round(10^coef(expanded.within)['bac10'], 2)``` times decrease in log fatality rate as compared to no BAC limit. Compared to the OLS model which showed that setting a blood alcohol limit of 0.1% is associated with, ceteris paribus, a ```r round(10^coef(expanded.ols)['bac10'], 2)``` times decrease in fatality rate as compared to no BAC limit. 
+  * This model suggests that setting a blood alcohol limit of 0.08% is associated with, ceteris paribus, a ```r round(10^coef(expanded.within)['bac8'], 2)``` times decrease in fatality rate as compared to no BAC limit. Compared to the OLS model which showed that setting a blood alcohol limit of 0.08% is associated with, ceteris paribus, a ```r round(10^coef(expanded.within)['bac8'], 2)``` times decrease in fatality rate as compared to no BAC limit.
 
 
 ### What do you estimate for coefficients on per se laws? How do the coefficients on per se laws change, if at all? 
 
-We note that per-se law is a statistically significant parameter. This model suggests that having a per-se law is associated with a ```r round(10^coef(expanded.within)['per_se_law1'], 2)``` times decrease in fatality rate as compared to not having per-se law. Compared to the OLS model which showed that having a per-se law is associated with a ```r round(10^coef(expanded.ols)['per_se_law1'], 2)``` times decrease in fatality rate as compared to not having per-se law
+We note that per-se law is a statistically significant parameter. This model suggests that having a per-se law is associated with, ceteris paribus, a ```r round(10^coef(expanded.within)['per_se_law1'], 2)``` times decrease in fatality rate as compared to not having per-se law. Compared to the OLS model which showed that having a per-se law is associated with, ceteris paribus, a ```r round(10^coef(expanded.ols)['per_se_law1'], 2)``` times decrease in fatality rate as compared to not having per-se law
 
 ### What do you estimate for coefficients on primary seat-belt laws? How do the coefficients on primary seatbelt laws change, if at all?
 
-In this model we note that seat belt primary law is a significant factor. This model suggests that having a primary seat belt law is associated with a ```r round(10^coef(expanded.within)['seat_belt_lawprimary'], 2)``` unit decrease in fatality rate as compared to not having  primary seat belt law. Compared to the OLS model for which the parameter was not statistically significant and had a close to 0 value of ```r round(10^coef(expanded.ols)['seat_belt_lawprimary'], 2)```
+In this model we note that seat belt primary law is a significant factor. This model suggests that having a primary seat belt law is associated with, ceteris paribus, a ```r round(10^coef(expanded.within)['seat_belt_lawprimary'], 2)``` unit decrease in fatality rate as compared to not having  primary seat belt law. Compared to the OLS model for which the parameter was not statistically significant and had a close to 0 value of ```r round(10^coef(expanded.ols)['seat_belt_lawprimary'], 2)```
 
 ## Model Assumptions
 
@@ -694,12 +700,14 @@ max_miles_driven_pc <- max_miles / max_month_pop
 min_miles_driven_pc <- min_miles / min_month_pop
   
 # fatal rate - represents increases/decreases in the fatality rate
-fatal_rate_covid_max <- round(coef(expanded.within)['miles_driven_per_capita'] * max_miles_driven_pc, 3) 
-fatal_rate_covid_min <- round(coef(expanded.within)['miles_driven_per_capita'] * min_miles_driven_pc, 3)
+fatal_rate_covid_max <- round(10^(coef(expanded.within)['miles_driven_per_capita']
+                              * max_miles_driven_pc), 3) 
+fatal_rate_covid_min <- round(10^(coef(expanded.within)['miles_driven_per_capita']
+                              * min_miles_driven_pc), 3)
 
 ```
 
-The FE model suggests that a one mile increase in the miles driven per capita is associated with a `r format(round(coef(expanded.within)['miles_driven_per_capita'], 5), scientific = FALSE)` unit increase in the fatality rate. During the COVID boom, the largest increase in driving was on `r format(as.Date(largest.increase), "%B %Y")` and it results in a estimated increase of `r round(max_miles_driven_pc, 2)` miles driven per capita and this is expected to result in a `r fatal_rate_covid_max` unit increase in the fatality rate.
+The FE model suggests that a one mile increase in the miles driven per capita is associated with a `r format(round(10^coef(expanded.within)['miles_driven_per_capita'], 5), scientific = FALSE)` unit increase in the fatality rate. During the COVID boom, the largest increase in driving was on `r format(as.Date(largest.increase), "%B %Y")` and it results in a estimated increase of `r round(max_miles_driven_pc, 2)` miles driven per capita and this is expected to result in a `r fatal_rate_covid_max` unit increase in the fatality rate.
 
 In contrast, the largest decrease in driving was on `r format(as.Date(largest.decrease), "%B %Y")` and it results in a estimated decrease of `r round(min_miles_driven_pc, 2)` miles driven per capita and this is expected to result in a `r fatal_rate_covid_min` unit decrease in the fatality rate.
 
