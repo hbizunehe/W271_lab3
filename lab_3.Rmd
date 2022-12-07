@@ -606,8 +606,6 @@ With a p-value of `r res$p.value` much less than $\alpha$, we reject the null hy
 
 # (10 points) Model Forecasts 
 
-#### Status Completed: Checked by Hannah
-
 <!--
 The COVID-19 pandemic dramatically changed patterns of driving. Find data (and include this data in your analysis, here) that includes some measure of vehicle miles driven in the US. Your data should at least cover the period from January 2018 to as current as possible. With this data, produce the following statements: 
 
@@ -763,6 +761,7 @@ data.frame(
 
 Our analysis shows that the residuals in our model are both heterskedastic and have serial correlation. The results from the vcovHC analysis suggests that cluster robust standard errors are the most robust. Specifically, the standard errors for cluster robust standard errors are slightly smaller than the regular OLS errors and robust standard error, while quite a bit higher (e.g, greater than 0.003) compared to the other standard error types.
 
+
 ```{r echo=FALSE, results='asis'}
 pool.model.se <-sqrt(diag(vcovHC(pooled_ols, method = "white2", type = "HC0")))
 exp.ols.model.se <-sqrt(diag(vcovHC(expanded.ols, method = "white2", type = "HC0")))
@@ -775,4 +774,4 @@ stargazer(pooled_ols, expanded.ols, expanded.within,
 
 ```
 
-When using robust cluster standard errors, our analysis shows that the fixed effects model has the highest R-squared value among the pooled and expanded OLS counterparts, as well as the lowest standard errors.
+When using robust cluster standard errors, our analysis shows that the fixed effects model has the highest R-squared value among the pooled and expanded OLS counterparts, as well as the lowest standard errors. This is shown in the table in the following page.
