@@ -601,7 +601,12 @@ res <- phtest(expanded.within, expanded.re)
 
 With a p-value of `r res$p.value` much less than $\alpha$, we reject the null hypothesis that random effects are appropriate, suggesting that we should use the fixed models. The random effects model is not likely to be consistent in this case.
 
-> TODO: Comment about consequences
+### Consequences of inapproriately using a random effect model
+
+A fixed effect model allows for an intercept per individual that is correlated to the independent variables. The fixed effect model normalizes each individual to their means to estimate the coefficients. A random effect model does not require this normalization to the mean due to the assumption of the uncorrelated individual fixed effects. When the assumption is valid then the random effect model acts like a partial pooling, the groups effect estimate will be partially based on groups that have abundant data. If such a correlation exists then there are two consequences for it:
+
+* The estimate of the individual coefficients would be incorrect. Especially low-sample groups will have poor estimates.
+* The residuals will have a serial correlation which makes the standard errors unreliable
 
 # (10 points) Model Forecasts 
 
