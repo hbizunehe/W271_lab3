@@ -8,7 +8,7 @@ output:
       number_sections: true
 ---
 
-```{r load packages, echo=FALSE, message=FALSE}
+```{r load packages, echo=FALSE, message=FALSE, warning=FALSE}
 list.of.packages <- c("plm", "grid", "ggrepel", "gridExtra", "tidyverse", "readr", "lubridate", "patchwork", "stargazer")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
@@ -47,8 +47,6 @@ load(file="./data/driving.RData")
 
 ## (5 points) Load the data and produce useful features.
 
-#### Status complete: Checked by Hannah
-
 <!---
 1. (5 points) Load the data and produce useful features. Specifically: 
     - Produce a new variable, called `speed_limit` that re-encodes the data that is in `sl55`, `sl65`, `sl70`, `sl75`, and `slnone`; 
@@ -56,8 +54,6 @@ load(file="./data/driving.RData")
     - Produce a new variable for each of the other variables that are one-hot encoded (i.e. `bac*` variable series). 
     - Rename these variables to sensible names that are legible to a reader of your analysis. For example, the dependent variable as provided is called, `totfatrte`. Pick something more sensible, like, `total_fatalities_rate`. There are few enough of these variables to change, that you should change them for all the variables in their data. (You will thank yourself later.)
 -->
-
-
 
 ```{r reencode}
 # For the fractions, we are taking the majority as a speed limit
@@ -113,12 +109,9 @@ state_df <- data.frame("index" = 1:51,
 main_df <- merge(df, state_df, by.x = 'state', by.y ='index')
 
 pdata <- pdata.frame(main_df, index=c("state", "year"))
-head(main_df)
 ```
 
-## (5 points) Provide a description of the basic structure of the dataset. 
-
-#### Status Complete: Checked by Hannah
+## (5 points) Provide a description of the basic structure of the dataset.
 
 <!--
 2. (5 points) Provide a description of the basic structure of the dataset. What is this data? How, where, and when is it collected? Is the data generated through a survey or some other method? Is the data that is presented a sample from the population, or is it a *census* that represents the entire population? Minimally, this should include:
@@ -128,8 +121,6 @@ head(main_df)
 The data contains state-level information on the total traffic fatalities rate in a specific year. The data also contains state law information that could have an impact on the traffic fatalities rate, like the speed limit, blood alcohol legal limit, seat belt laws, etc. The data is likely a census that represents the entire population since it's aggregated on a yearly level. The outcome of interest, `total_fatalities_rate` is defined as the number of fatalities per 100,000 people.
 
 ##  (20 points) EDA
-
-#### Status Complete: Add descriptions
 
 <!--
 3. (20 points) Conduct a very thorough EDA, which should include both graphical and tabular techniques, on the dataset, including both the dependent variable `total_fatalities_rate` and the potential explanatory variables. Minimally, this should include: 
@@ -200,8 +191,6 @@ plt <- df  %>%
 
 ### Average and state wide trends
 
-#### Status Complete: Add descriptions.
-
 ```{r overall mean EDA, echo=FALSE, fig.align='center', fig.height=4, fig.width=10}
 # Average mean for total_fatalities_rate over years
 main_plt <- main_df %>%
@@ -239,6 +228,7 @@ for (i in 2:5) {
 grid.arrange(plots[[1]], plots[[2]], plots[[3]], plots[[4]], nrow = 2, ncol = 2,
              top = textGrob("Fatality rate by states", gp=gpar(fontsize=20)))
 ```
+
 Splitting the data by state provides the additional context needed to understand the trend in traffic fatalities. For most states, as is expected, the fatality rates decreased over the years. However, for some states, like Alabama and Arkansas, the trend does not show much change over time. Mississipi, on the other hand, shows an increase in fatality rate over time.
 
 
@@ -328,11 +318,7 @@ plt.box.bac = plots.box.by.group(
   plot_annotation(title='Time series and distribution comparisons of factor variables')
 ```
 
-> TODO: Add takeaways from above graph
-
 ### Description of variables
-
-#### Status Complete: Format descriptions.
 
 #### Factor variables
 
@@ -404,8 +390,6 @@ plt.scatter.mda = plots.scatter.by.state(
 
 # (15 points) Preliminary Model
 
-#### Status complete: Checked by Hannah
-
 <!--
 Estimate a linear regression model of *totfatrte* on a set of dummy variables for the years 1981 through 2004 and interpret what you observe. In this section, you should address the following tasks: 
 
@@ -425,13 +409,13 @@ pooled_ols <- plm(log_total_fatalities_rate ~ year, data = pdata,
 summary(pooled_ols)
 ```
 
-* 'Starting from a linear model gives us an easy and intuitive way to understand the overall trend pattern over the years via the coefficients on the year dummy variables. In later sections, the report details panel data analysis that can be compared against this benchmark.'  
-* 'This model explains the log of fatality rate over different years compared to the baseline year, which is 1980. All coefficients except for the 1981 year are statistically significant. From this model, we learn that in all years following the baseline up to 2004, the fatality rate goes down compared to the baseline year 1980. The decline accelerates as the year increases but not consistently, as seen, for example, between 1986 - 1988, where the fatality rate increases compared to previous years. However, it returns to the decline track/trend in 1989. The higher, in absolute value, coefficients over the years means that driving becomes safer as the fatality rate keeps decreasing. For example, the fatality rate, which was ```r round(10^coef(pooled_ols)['(Intercept)'], 2)``` as of 1980, became ```r round(10^coef(pooled_ols)['year1990'], 2)``` in 1990, ```r round(10^coef(pooled_ols)['year2000'], 2)``` in 2000, and ```r round(10^coef(pooled_ols)['year2004'], 2)``` in 2004, showing that driving over the years has become safer. In other words, ```r(round(10^coef(pooled_ols)['(Intercept)'] - 10^(coef(pooled_ols)['(Intercept)']+coef(pooled_ols)['year2004']), 2))``` fewer people are predicted to be involved in traffic fatalities out of 100,000 people in 2004 than in 1980 as per this model.'   
-* 'Note that we are ignoring unobserved Heterogeneity and the group structure by taking each entry as a separate observation. Because of that, residuals generally correlate across time and have heteroskedasticity across and/or within groups. Heteroscedastic residuals are a violation of the OLS Homoscedasticity assumption, which will make it difficult to trust the standard error. As a result, the confidence interval can not be trusted as it can be too wide or narrow. Also, the independence assumption (no autocorrelation) is violated since we did not accommodate the lag/trend component, which makes the OLS estimates to be unreliable; in other words, our OLS estimator is not the Best Linear Unbiased Estimator.'   
+Starting from a linear model gives us an easy and intuitive way to understand the overall trend pattern over the years via the coefficients on the year dummy variables. In later sections, the report details panel data analysis that can be compared against this benchmark.
+
+This model explains the log of fatality rate over different years compared to the baseline year, which is 1980. All coefficients except for the 1981 year are statistically significant. From this model, we learn that in all years following the baseline up to 2004, the fatality rate goes down compared to the baseline year 1980. The decline accelerates as the year increases but not consistently, as seen, for example, between 1986 - 1988, where the fatality rate increases compared to previous years. However, it returns to the decline track/trend in 1989. The higher, in absolute value, coefficients over the years means that driving becomes safer as the fatality rate keeps decreasing. For example, the fatality rate, which was `r round(10^coef(pooled_ols)['(Intercept)'], 2)` as of 1980, became `r round(10^coef(pooled_ols)['year1990'], 2)` in 1990, `r round(10^coef(pooled_ols)['year2000'], 2)` in 2000, and `r round(10^coef(pooled_ols)['year2004'], 2)` in 2004, showing that driving over the years has become safer. In other words, `r (round(10^coef(pooled_ols)['(Intercept)'] - 10^(coef(pooled_ols)['(Intercept)']+coef(pooled_ols)['year2004']), 2))` fewer people are predicted to be involved in traffic fatalities out of 100,000 people in 2004 than in 1980 as per this model.
+
+Note that we are ignoring unobserved Heterogeneity and the group structure by taking each entry as a separate observation. Because of that, residuals generally correlate across time and have heteroskedasticity across and/or within groups. Heteroscedastic residuals are a violation of the OLS Homoscedasticity assumption, which will make it difficult to trust the standard error. As a result, the confidence interval can not be trusted as it can be too wide or narrow. Also, the independence assumption (no autocorrelation) is violated since we did not accommodate the lag/trend component, which makes the OLS estimates to be unreliable; in other words, our OLS estimator is not the Best Linear Unbiased Estimator.
 
 # (15 points) Expanded Model 
-
-#### Status complete: Checked by Hannah
 
 <!--
 Expand the **Preliminary Model** by adding variables related to the following concepts: 
@@ -454,10 +438,11 @@ If it is appropriate, include transformations of these variables. Please careful
 -->
 
 ## Transformation (treatment) of Variables
+
 * As described in a previous section, a log transformation was performed on the response variable to make the distribution closer to normal.
-* States where highway speeds were made over 70mph during the middle of the year contained a fractional value for that year. The fraction was thresholded at 0.5 to make this a binary variable. As there is no meaningful interpretation for this variable as a continuous value, this threshold was necessary to convert it into a factor.
+* States where highway speeds were made over 70mph during the middle of the year contained a fractional value for that year. The fraction was cut off at the value of 0.5 to make this a binary variable. As there is no meaningful interpretation for this variable as a continuous value, this threshold was necessary to convert it into a factor.
 * A state can have a primary, secondary or no seat belt laws. The seat_belt_law reflects these three factors combined into one variable. 
-* Graduated drivers licence law and per-se law parameters both have fractional value for years where the law was implemented mid-year. The fractions were thresholded at 0.5 to make this a binary variable. As there is no meaningful interpretation for these variables as a continuous value, this threshold was necessary to convert them into a factor.
+* Graduated drivers licence law and per-se law parameters both have fractional value for years where the law was implemented mid-year. The fractions were cut off at the value of 0.5 to make this a binary variable. As there is no meaningful interpretation for these variables as a continuous value, this threshold was necessary to convert them into a factor.
 * Although Blood alcohol content (BAC) levels of 0.08% or 0.1% lends itself to a numeric interpretation, there is no numeric value associated with no BAC limit. For this reason BAC has been treated as a factor variable with levels none, 10 and 8.
 * None of the continuous variables, namely, unemployment rate, miles drive per-capita, proportion  of 14 to 24 aged people in population required any transformation. This can be seen in the correlation plots in Figure y where their relationship to log fatality rates appear linear.
 
@@ -486,19 +471,17 @@ summary(expanded.ols)
 
 ###  How are the blood alcohol variables defined? Interpret the coefficients that you estimate for this concept. 
 
-* In an earlier section we have defined our treatment of the BAC variable as a factor with levels 'none', '10' and '8'. In this model we note that the base level is no blood alcohol limit. We note that bac value of 0.08% is statistically significant and 0.1% is not statistically significant. The model suggests that setting a blood alcohol limit of 0.1% is associated with, ceteris paribus, a ```r round(10^coef(expanded.ols)['bac10'], 2)``` times decrease in fatality rate as compared to no BAC limit.  The model suggests that setting a blood alcohol limit of 0.08% is associated with, ceteris paribus, a ```r round(10^coef(expanded.ols)['bac8'], 2)``` times decrease in fatality rate as compared to no BAC limit.
+In an earlier section we have defined our treatment of the BAC variable as a factor with levels 'none', '10' and '8'. In this model we note that the base level is no blood alcohol limit. We note that bac value of 0.08% is statistically significant and 0.1% is not statistically significant. The model suggests that setting a blood alcohol limit of 0.1% is associated with, ceteris paribus, a `r round(10^coef(expanded.ols)['bac10'], 2)` times decrease in fatality rate as compared to no BAC limit.  The model suggests that setting a blood alcohol limit of 0.08% is associated with, ceteris paribus, a `r round(10^coef(expanded.ols)['bac8'], 2)` times decrease in fatality rate as compared to no BAC limit.
     
 ### Do *per se laws* have a negative effect on the fatality rate? 
 
-* We note that per-se law is not a statistically significant parameter. The model suggests that having a per-se law is associated with, ceteris paribus, a ```r round(10^coef(expanded.ols)['per_se_law1'], 2)``` times decrease in fatality rate as compared to not having per-se law.
+We note that per-se law is not a statistically significant parameter. The model suggests that having a per-se law is associated with, ceteris paribus, a `r round(10^coef(expanded.ols)['per_se_law1'], 2)` times decrease in fatality rate as compared to not having per-se law.
 
 ### Does having a primary seat belt law reduce fatality rates?
 
-* We note that the seat belt law factors are not statistically significant. We also note that the implementation of the primary law leads to, ceteris paribus, a  ```r round(10^coef(expanded.ols)['seat_belt_lawprimary'], 3)``` times decrease in fatality rate which is practically insignificant. 
+We note that the seat belt law factors are not statistically significant. We also note that the implementation of the primary law leads to, ceteris paribus, a  `r round(10^coef(expanded.ols)['seat_belt_lawprimary'], 3)` times decrease in fatality rate which is practically insignificant. 
 
-# (15 points) State-Level Fixed Effects 
-
-#### Status complete: Checked by Hannah
+# (15 points) State-Level Fixed Effects
 
 ## Re-estimate the **Expanded Model** using fixed effects at the state level. 
 
@@ -543,17 +526,18 @@ stargazer(expanded.ols, expanded.within,
 
 We note that BAC value of 0.1% and 0.08% are both statistically significant parameters. 
 
-  * This model suggests that setting a blood alcohol limit of 0.1% is associated with, ceteris paribus, a ```r round(10^coef(expanded.within)['bac10'], 2)``` times decrease in log fatality rate as compared to no BAC limit. Compared to the OLS model which showed that setting a blood alcohol limit of 0.1% is associated with, ceteris paribus, a ```r round(10^coef(expanded.ols)['bac10'], 2)``` times decrease in fatality rate as compared to no BAC limit. 
-  * This model suggests that setting a blood alcohol limit of 0.08% is associated with, ceteris paribus, a ```r round(10^coef(expanded.within)['bac8'], 2)``` times decrease in fatality rate as compared to no BAC limit. Compared to the OLS model which showed that setting a blood alcohol limit of 0.08% is associated with, ceteris paribus, a ```r round(10^coef(expanded.within)['bac8'], 2)``` times decrease in fatality rate as compared to no BAC limit.
+This model suggests that setting a blood alcohol limit of 0.1% is associated with, ceteris paribus, a `r round(10^coef(expanded.within)['bac10'], 2)` times decrease in log fatality rate as compared to no BAC limit. Compared to the OLS model which showed that setting a blood alcohol limit of 0.1% is associated with, ceteris paribus, a `r round(10^coef(expanded.ols)['bac10'], 2)` times decrease in fatality rate as compared to no BAC limit.
+
+Additionally, setting a blood alcohol limit of 0.08% is associated with, ceteris paribus, a `r round(10^coef(expanded.within)['bac8'], 2)` times decrease in fatality rate as compared to no BAC limit. Compared to the OLS model which showed that setting a blood alcohol limit of 0.08% is associated with, ceteris paribus, a `r round(10^coef(expanded.within)['bac8'], 2)` times decrease in fatality rate as compared to no BAC limit.
 
 
 ### What do you estimate for coefficients on per se laws? How do the coefficients on per se laws change, if at all? 
 
-We note that per-se law is a statistically significant parameter. This model suggests that having a per-se law is associated with, ceteris paribus, a ```r round(10^coef(expanded.within)['per_se_law1'], 2)``` times decrease in fatality rate as compared to not having per-se law. Compared to the OLS model which showed that having a per-se law is associated with, ceteris paribus, a ```r round(10^coef(expanded.ols)['per_se_law1'], 2)``` times decrease in fatality rate as compared to not having per-se law
+We note that per-se law is a statistically significant parameter. This model suggests that having a per-se law is associated with, ceteris paribus, a `r round(10^coef(expanded.within)['per_se_law1'], 2)` times decrease in fatality rate as compared to not having per-se law. Compared to the OLS model which showed that having a per-se law is associated with, ceteris paribus, a `r round(10^coef(expanded.ols)['per_se_law1'], 2)` times decrease in fatality rate as compared to not having per-se law
 
 ### What do you estimate for coefficients on primary seat-belt laws? How do the coefficients on primary seatbelt laws change, if at all?
 
-In this model we note that seat belt primary law is a significant factor. This model suggests that having a primary seat belt law is associated with, ceteris paribus, a ```r round(10^coef(expanded.within)['seat_belt_lawprimary'], 2)``` unit decrease in fatality rate as compared to not having  primary seat belt law. Compared to the OLS model for which the parameter was not statistically significant and had a close to 0 value of ```r round(10^coef(expanded.ols)['seat_belt_lawprimary'], 2)```
+In this model we note that seat belt primary law is a significant factor. This model suggests that having a primary seat belt law is associated with, ceteris paribus, a `r round(10^coef(expanded.within)['seat_belt_lawprimary'], 2)` unit decrease in fatality rate as compared to not having  primary seat belt law. Compared to the OLS model for which the parameter was not statistically significant and had a close to 0 value of `r round(10^coef(expanded.ols)['seat_belt_lawprimary'], 2)`
 
 ## Model Assumptions
 
@@ -565,9 +549,7 @@ res <- pFtest(expanded.within, expanded.ols)
 
 With a p-value of `r as.numeric(res$p.value)` less than 0.05, we reject the null hypothesis of no fixed effects. This means we should include state and/or time fixed effects in our model. Hence the fixed effect model is better for this scenario.
 
-# (10 points) Consider a Random Effects Model 
-
-#### Status Mostly Complete: Include consequences about inappropriately estimating a random effects model.
+# (10 points) Consider a Random Effects Model
 
 <!--
 Instead of estimating a fixed effects model, should you have estimated a random effects model?
@@ -603,11 +585,7 @@ res <- phtest(expanded.within, expanded.re)
 
 With a p-value of `r res$p.value` much less than $\alpha$, we reject the null hypothesis that random effects are appropriate, suggesting that we should use the fixed models. The random effects model is not likely to be consistent in this case.
 
-> TODO: Comment about consequences
-
-# (10 points) Model Forecasts 
-
-#### Status Completed: Checked by Hannah
+# (10 points) Model Forecasts
 
 <!--
 The COVID-19 pandemic dramatically changed patterns of driving. Find data (and include this data in your analysis, here) that includes some measure of vehicle miles driven in the US. Your data should at least cover the period from January 2018 to as current as possible. With this data, produce the following statements: 
@@ -713,8 +691,6 @@ In contrast, the largest decrease in driving was on `r format(as.Date(largest.de
 
 # (5 points) Evaluate Error
 
-#### Status incomplete
-
 <!--
 If there were serial correlation or heteroskedasticity in the idiosyncratic errors of the model, what would be the consequences on the estimators and their standard errors? Is there any serial correlation or heteroskedasticity? 
 -->
@@ -769,7 +745,7 @@ pool.model.se <-sqrt(diag(vcovHC(pooled_ols, method = "white2", type = "HC0")))
 exp.ols.model.se <-sqrt(diag(vcovHC(expanded.ols, method = "white2", type = "HC0")))
 within.model.se <-sqrt(diag(vcovHC(expanded.within, method = "white2", type = "HC0")))
  
-stargazer(pooled_ols, expanded.ols, expanded.within,
+stargazer(pooled_ols, expanded.ols, expanded.within, omit=c('year'),
           se=list(pool.model.se, exp.ols.model.se, within.model.se), 
           style="qje", omit.stat=c("adj.rsq","f"), header = FALSE,
           column.labels = c( "Pooled", "Expanded OLS", "Within"))
