@@ -4,7 +4,7 @@ subtitle: 'US Traffic Fatalities: 1980 - 2004'
 output:
     pdf_document: 
       toc: true
-      toc_depth: 4
+      toc_depth: 2
       number_sections: true
 ---
 
@@ -46,8 +46,6 @@ load(file="./data/driving.RData")
 # (30 points, total) Build and Describe the Data 
 
 ## (5 points) Load the data and produce useful features.
-
-#### Status complete: Checked by Hannah
 
 <!---
 1. (5 points) Load the data and produce useful features. Specifically: 
@@ -118,18 +116,14 @@ head(main_df)
 
 ## (5 points) Provide a description of the basic structure of the dataset. 
 
-#### Status Complete: Checked by Hannah
-
 <!--
 2. (5 points) Provide a description of the basic structure of the dataset. What is this data? How, where, and when is it collected? Is the data generated through a survey or some other method? Is the data that is presented a sample from the population, or is it a *census* that represents the entire population? Minimally, this should include:
     - How is the our dependent variable of interest `total_fatalities_rate` defined? 
 -->
 
-The data contains state-level information on the total traffic fatalities rate in a specific year. The data also contains state law information that could have an impact on the traffic fatalities rate, like the speed limit, blood alcohol legal limit, seat belt laws, etc. The data is likely a census that represents the entire population since it's aggregated on a yearly level. The outcome of interest, `total_fatalities_rate` is defined as the number of fatalities per 100,000 people.
+The data contains state-level information on the total traffic fatalities rate in a specific year. The data also contains state law information that could have an impact on the traffic fatalities rate, like the speed limit, blood alcohol legal limit, seat belt laws, etc. The data was compiled by Donald G Freedman for the paper "Drunk living legislation and traffic fatalities:New evidence on BAC 08 laws" - Contemporary Economic Policy 2007. In the paper it is note that "Fatality data are from the Fatality Analysis Reporting System (FARS) compiled by NHTSA. Data on traffic legislation for the years 1982—1999 were kindly provided by Thomas Dee. Earlier data on legislation were taken from Zador et al. (1989) and later data on legislation from the National Center for Statistics and Analysis at the NHTSA Web site at http://www-nrd.nhtsa.dot.gov/departments/nrd-30/ncsa/. Data on graduated drivers’ licenses are taken from Dee, Grabowski, and Morrisey (2005). State unemployment rates are from Dee and the Bureau of Labor Statistics; age data are from the Bureau of the Census.  The outcome of interest, `total_fatalities_rate` is defined as the number of fatalities per 100,000 people.
 
 ##  (20 points) EDA
-
-#### Status Complete: Add descriptions
 
 <!--
 3. (20 points) Conduct a very thorough EDA, which should include both graphical and tabular techniques, on the dataset, including both the dependent variable `total_fatalities_rate` and the potential explanatory variables. Minimally, this should include: 
@@ -138,7 +132,6 @@ The data contains state-level information on the total traffic fatalities rate i
 
 As with every EDA this semester, the goal of this EDA is not to document your own process of discovery -- save that for an exploration notebook -- but instead it is to bring a reader that is new to the data to a full understanding of the important features of your data as quickly as possible. In order to do this, your EDA should include a detailed, orderly narrative description of what you want your reader to know. Do not include any output -- tables, plots, or statistics -- that you do not intend to write about.
 -->
-
 
 ```{r eda plots, fig.height=7, echo=FALSE}
 
@@ -191,8 +184,6 @@ plt <- df  %>%
 ```
 
 ### Average and state wide trends
-
-#### Status Complete: Add descriptions.
 
 ```{r overall mean EDA, echo=FALSE, fig.align='center', fig.height=4, fig.width=10}
 # Average mean for total_fatalities_rate over years
@@ -324,8 +315,6 @@ plt.box.bac = plots.box.by.group(
 > TODO: Add takeaways from above graph
 
 ### Description of variables
-
-#### Status Complete: Format descriptions.
 
 #### Factor variables
 
@@ -754,7 +743,7 @@ data.frame(
 )
 ```
 
-Our analysis shows that the residuals in our model are both heterskedastic and have serial correlation. The results from the vcovHC analysis suggests that cluster robust standard errors are the most robust. Specifically, the standard errors for cluster robust sandard errors are slightly smaller than the regular OLS errors and robust standard error, while quite a bit higher (e.g, greater than 0.003) compared to the other standard error types.
+Our analysis shows that the residuals in our model are both heterskedastic and have serial correlation. The results from the vcovHC analysis suggests that cluster robust standard errors are the most robust. Specifically, the standard errors for cluster robust standard errors are slightly smaller than the regular OLS errors and robust standard error, while quite a bit higher (e.g, greater than 0.003) compared to the other standard error types.
 
 ```{r echo=FALSE, results='asis'}
 pool.model.se <-sqrt(diag(vcovHC(pooled_ols, method = "white2", type = "HC0")))
